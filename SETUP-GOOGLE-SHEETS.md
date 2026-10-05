@@ -36,6 +36,9 @@ delete them yourself.
    **Advanced**, then **Go to Buck's Holsters Orders (unsafe)**, then **Allow**.
 6. Copy the **Web app URL**. It looks like `https://script.google.com/macros/s/AKfy.../exec`.
 
+If you open that link in a browser, you'll see a short line of text: `ok: true, app: "Buck's Holsters Orders"`.
+That means the Google side is working. The link isn't the app itself; it's the address the app sends orders to.
+
 ## Step 3: Connect each phone
 
 On each phone or tablet:
