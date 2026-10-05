@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#2e5a39"/>
+  <rect x="40" y="40" width="432" height="432" rx="68" fill="none" stroke="#d9a94e" stroke-width="12"/>
+  <text x="256" y="318" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-weight="700" font-size="200" fill="#f4f7f2" letter-spacing="-6">BH</text>
+  <text x="256" y="392" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="44" fill="#d9a94e" letter-spacing="8">ORDERS</text>
+</svg>

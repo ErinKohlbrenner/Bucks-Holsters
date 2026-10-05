@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2e5a39">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BH Orders">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<!--APP-->
+<title>Buck's Holsters Orders</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Saira+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: one-column bench sheet. Sticky order bar on top, stacked section cards, every choice a big tap chip. */
+:root {
+  --bg: #eceee9;
+  --surface: #fbfbf9;
+  --ink: #1a1f1b;
+  --muted: #586259;
+  --line: #cdd3ca;
+  --accent: #2e5a39;
+  --accent-ink: #f4f7f2;
+  --accent-soft: #dde8dd;
+  --brass: #94681c;
+  --danger: #a32a20;
+  --danger-soft: #f6e2de;
+  --ok: #2e6b3e;
+  --display: 'Saira Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --r: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131714; --surface: #1c211d; --ink: #e6ebe4; --muted: #9ba69c; --line: #343d36;
+    --accent: #86c493; --accent-ink: #0f1a12; --accent-soft: #24342a; --brass: #d9a94e;
+    --danger: #f08a7e; --danger-soft: #3a211e; --ok: #86c493;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131714; --surface: #1c211d; --ink: #e6ebe4; --muted: #9ba69c; --line: #343d36;
+  --accent: #86c493; --accent-ink: #0f1a12; --accent-soft: #24342a; --brass: #d9a94e;
+  --danger: #f08a7e; --danger-soft: #3a211e; --ok: #86c493;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.45 var(--body);
+  -webkit-tap-highlight-color: transparent;
+}
+.app { max-width: 760px; margin: 0 auto; padding: 0 16px 48px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: .01em; text-wrap: balance; margin: 0; }
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+
+/* Buttons */
+.btn, .btn-primary, .btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 18px; border-radius: 10px; border: 1.5px solid var(--line);
+  background: var(--surface); font-weight: 600; cursor: pointer; text-decoration: none; color: var(--ink);
+}
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-ghost { background: transparent; border-color: transparent; padding: 0 8px; color: var(--accent); }
+.btn-link { background: none; border: 0; padding: 8px 4px; font-weight: 600; color: var(--accent); cursor: pointer; }
+.danger { color: var(--danger); }
+.armed { background: var(--danger) !important; border-color: var(--danger) !important; color: var(--surface) !important; border-radius: 8px; padding-inline: 10px; }
+.wide { width: 100%; }
+
+/* Home */
+.brand { display: flex; align-items: center; gap: 14px; padding: 24px 0 18px; }
+.mark {
+  width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--accent); color: var(--accent-ink); font: 700 24px/1 var(--display);
+  box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 0 5px var(--brass);
+}
+.brand h1 { font-size: 30px; line-height: 1; }
+.brand p { margin: 4px 0 0; color: var(--muted); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+.btn-hero {
+  width: 100%; min-height: 84px; border: 0; border-radius: 16px; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink);
+  font: 700 34px/1 var(--display); letter-spacing: .03em; text-transform: uppercase;
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+}
+.btn-hero span { font-size: 44px; font-weight: 600; line-height: .8; }
+.home-actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+.tally { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 22px 0 10px; align-items: baseline; justify-content: space-between; }
+.tally h2 { font-size: 22px; }
+.tally p { margin: 0; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.orders { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.orders button {
+  width: 100%; text-align: left; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px;
+  padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+}
+.o-num { font: 600 14px/1.3 var(--body); color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.o-name { font-weight: 700; font-size: 17px; min-width: 0; overflow-wrap: anywhere; }
+.o-sum { grid-column: 1 / -1; color: var(--muted); font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.pill { justify-self: end; align-self: start; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.pill.ready { background: var(--accent-soft); color: var(--ok); }
+.pill.sent { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.pill.todo { background: var(--danger-soft); color: var(--danger); }
+.empty { background: var(--surface); border: 1.5px dashed var(--line); border-radius: var(--r); padding: 20px; color: var(--muted); margin: 0; }
+.footer-actions { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Sticky bar */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px;
+  margin: 0 -16px 14px; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.bar-id { text-align: center; min-width: 0; }
+.bar-id strong { display: block; font: 700 20px/1.1 var(--display); letter-spacing: .03em; font-variant-numeric: tabular-nums; }
+.bar-id span { display: block; color: var(--muted); font-size: 13px; }
+
+/* Cards and fields */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 16px; margin-bottom: 14px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: -4px; }
+.card-head h2 { font-size: 24px; }
+.card-head .kind { color: var(--brass); }
+.field { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.field > legend, .field > label, .lbl {
+  padding: 0; font-size: 13px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+}
+.field > legend { margin-bottom: 8px; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.row.addr { grid-template-columns: 2fr 1fr 1.2fr; }
+@media (max-width: 480px) { .row.addr { grid-template-columns: 1fr 1fr; } .row.addr > :first-child { grid-column: 1 / -1; } }
+input[type=text], input[type=email], input[type=tel], textarea {
+  width: 100%; min-height: 48px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px;
+  background: var(--bg); font-size: 17px;
+}
+textarea { min-height: 84px; resize: vertical; line-height: 1.4; }
+input:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.sub { display: grid; gap: 16px; padding-left: 14px; border-left: 3px solid var(--accent-soft); }
+.req::after { content: ' required'; text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--brass); }
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; cursor: pointer; }
+.chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chip span {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 16px;
+  border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); font-weight: 600; user-select: none;
+}
+.chip input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip input:focus-visible + span { outline: 3px solid var(--brass); outline-offset: 2px; }
+.chips.big .chip { flex: 1 1 140px; }
+.chips.big .chip span { width: 100%; justify-content: center; min-height: 56px; font-size: 18px; }
+.chip i { width: 18px; height: 18px; border-radius: 50%; background: var(--sw); box-shadow: 0 0 0 1.5px var(--line); flex: none; }
+.chip input:checked + span i { box-shadow: 0 0 0 2px var(--accent-ink); }
+.check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 600; cursor: pointer; }
+.check input { width: 22px; height: 22px; accent-color: var(--accent); }
+
+.add-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.add-row .btn { border-style: dashed; min-height: 56px; }
+.hint { color: var(--muted); font-size: 14px; margin: 0; }
+
+.errors { background: var(--danger-soft); color: var(--danger); border-radius: var(--r); padding: 14px 16px; margin-bottom: 14px; display: grid; gap: 10px; }
+.errors ul { margin: 0; padding-left: 20px; }
+.errors .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.bad { outline: 2px solid var(--danger); outline-offset: 5px; border-radius: 10px; }
+
+/* Send */
+.addr-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.addr { font-weight: 700; user-select: all; overflow-wrap: anywhere; }
+.send-actions { display: grid; gap: 10px; }
+pre.preview {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px;
+  white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.5 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  max-height: 60vh; overflow: auto; margin: 0;
+}
+.big-num { font: 700 44px/1 var(--display); font-variant-numeric: tabular-nums; }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px);
+  background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 10px; font-weight: 600;
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); z-index: 10;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <section id="home">
+    <header class="brand">
+      <div class="mark" aria-hidden="true">BH</div>
+      <div>
+        <h1>Buck's Holsters</h1>
+        <p>Show order book</p>
+      </div>
+    </header>
+
+    <button id="new-order" class="btn-hero" type="button"><span aria-hidden="true">+</span> New Order</button>
+    <div class="home-actions">
+      <button id="go-send" class="btn wide" type="button">Email orders to support</button>
+    </div>
+
+    <div class="tally">
+      <h2>Orders on this device</h2>
+      <p id="tally-line"></p>
+    </div>
+    <ul id="order-list" class="orders"></ul>
+    <p id="empty" class="empty">No orders yet. Tap <strong>New Order</strong> to start one. Each order gets its own number and today's date, and saves as you type.</p>
+
+    <div class="footer-actions">
+      <button id="clear-sent" class="btn-link danger" type="button" hidden>Remove emailed orders from this device</button>
+    </div>
+  </section>
+
+  <!-- ORDER FORM -->
+  <section id="order" hidden>
+    <div class="bar">
+      <button id="back" class="btn-ghost" type="button" aria-label="Back to orders">‹ Orders</button>
+      <div class="bar-id"><strong id="o-num"></strong><span id="o-date"></span></div>
+      <button id="done" class="btn-primary" type="button">Done</button>
+    </div>
+    <div id="errors" class="errors" role="alert" hidden></div>
+    <form id="form-body" autocomplete="off" novalidate></form>
+  </section>
+
+  <!-- SEND -->
+  <section id="send" hidden>
+    <div class="bar">
+      <button id="send-back" class="btn-ghost" type="button">‹ Orders</button>
+      <div class="bar-id"><strong>Email orders</strong><span id="send-sub"></span></div>
+      <span></span>
+    </div>
+
+    <div class="card">
+      <div>
+        <div class="big-num" id="send-count">0</div>
+        <p class="hint" id="send-count-label">orders to send</p>
+      </div>
+      <div class="addr-line"><span class="lbl">To</span> <span class="addr" id="send-addr"></span></div>
+      <label class="check"><input type="checkbox" id="send-all"> Include orders already emailed</label>
+      <div class="send-actions">
+        <a id="mail-link" class="btn-primary" href="#">Open in Mail app</a>
+        <button id="share-csv" class="btn" type="button">Share spreadsheet file (CSV)</button>
+        <button id="copy-text" class="btn" type="button">Copy all orders as text</button>
+      </div>
+      <p class="hint">Open in Mail fills in the address, subject and every order. If your phone's mail app doesn't open, copy the orders and paste them into an email to the address above.</p>
+    </div>
+
+    <div class="card">
+      <h2>After the email goes out</h2>
+      <p class="hint">Marking orders as emailed keeps them on this device but moves them out of the next batch. If you edit an emailed order later, it goes back into the batch.</p>
+      <button id="mark-sent" class="btn" type="button">Mark these orders as emailed</button>
+    </div>
+
+    <h2 style="margin:6px 0 10px;font-size:20px">Email preview</h2>
+    <pre id="send-preview" class="preview"></pre>
+  </section>
+</div>
+
+<datalist id="guns">
+  <option value="Glock 17"><option value="Glock 19"><option value="Glock 19X"><option value="Glock 26"><option value="Glock 43"><option value="Glock 43X"><option value="Glock 45"><option value="Glock 48">
+  <option value="Sig Sauer P365"><option value="Sig Sauer P365 XL"><option value="Sig Sauer P365 X-Macro"><option value="Sig Sauer P320"><option value="Sig Sauer P320 Compact">
+  <option value="S&amp;W M&amp;P 9 2.0"><option value="S&amp;W M&amp;P Shield Plus"><option value="S&amp;W Equalizer"><option value="Springfield Hellcat"><option value="Springfield Hellcat Pro">
+  <option value="Ruger LCP Max"><option value="Ruger Security-9"><option value="Taurus G3"><option value="Taurus G3C"><option value="Canik TP9 Elite SC"><option value="Canik METE SFx">
+  <option value="CZ P-10 C"><option value="Walther PDP"><option value="HK VP9"><option value="1911 5&quot;"><option value="CZ Scorpion EVO 3">
+</datalist>
+<datalist id="lights">
+  <option value="Streamlight TLR-7A"><option value="Streamlight TLR-7 Sub"><option value="Streamlight TLR-1 HL"><option value="Streamlight TLR-8A">
+  <option value="Surefire X300U"><option value="Surefire XC1"><option value="Olight Baldr Mini"><option value="Olight PL-Mini 2"><option value="Olight Baldr S">
+  <option value="Inforce APLc"><option value="Holosun P.ID"><option value="Cloud Defensive">
+</datalist>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const SUPPORT_EMAIL = 'support@bucksholsters.com';
+
+// ---- Option lists (edit these to add choices) ----
+const RING_COLORS = [
+  ['Black', '#111214'], ['Royal Blue', '#2643c4'], ['Teal', '#138a8a'], ['Ocean Mist', '#8cc8bd'],
+  ['Electric Blue', '#1e90ff'], ['Lime Green', '#86d03a'], ['Emerald Green', '#178a4f'], ['Pastel Pink', '#f5b5c9'],
+  ['Fuchsia Pink', '#de2a8b'], ['Gold', '#cfa83a'], ['Red', '#c42130'], ['Orange Gold', '#e5952a'],
+  ['Yellow', '#f1d334'], ['Antique', '#9a8463'], ['Gunmetal', '#4b5359'], ['Purple', '#6a3fa0'],
+];
+const HANDS = ['Right', 'Left'];
+const CARRY = [['IWB', 'Inside waistband (IWB)'], ['OWB', 'Outside waistband (OWB)']];
+const IWB_STYLES = ['Lil Buck', 'Mini Buck', 'Sidecar', 'Other'];
+const IWB_CLIPS = ['1.5" Fomi', '1.75" Fomi', 'Hart Clip', 'Monoblock', 'Double Grip Hook', 'Ulti-Clip'];
+const OWB_LEVELS = ['Level 1', 'Level 2'];
+const OWB_STYLES = ['Taco', 'Pancake', 'QLS'];
+const TACO_ATTACH = ['Belt Slide', 'Combat Loop', 'Paddle', 'Velcro'];
+const QLS_DROP = ['Mid-Drop', 'Low-Drop'];
+const LIGHT = ['No light', 'With light'];
+const MATERIALS = ['Black', 'Black Carbon Fiber', 'Custom Print'];
+const MAG_TYPES = [
+  'Single Stack', 'Double Stack', 'Larger Calibers', 'Single Stack 2 Mag', 'Double Stack 2 Mag',
+  'Large Caliber 2 Mag', 'AR Mag', 'Scorpion Mag',
+];
+const MAG_FINISH = ['Match Holster', 'Black', 'Custom Print'];
+
+const HOLSTER_DEFAULTS = { material: 'Black' };
+const MAG_DEFAULTS = { finish: 'Match Holster' };
+
+// ---- Storage ----
+const KEY = 'bh.orders.v1';
+let storageWarned = false;
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; }
+}
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(orders)); }
+  catch (e) {
+    if (!storageWarned) { storageWarned = true; toast('This browser is blocking storage. Orders will be lost if you close the app.'); }
+  }
+}
+let orders = load(KEY, []);
+let current = null;
+
+// ---- Helpers ----
+const $ = (s) => document.querySelector(s);
+const pad = (n) => String(n).padStart(2, '0');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+const fmtTime = (t) => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+const fmtDateTime = (t) => fmtDate(t) + ' ' + fmtTime(t);
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+// Two-tap confirm (the first tap arms the button, the second does it).
+function confirmTap(btn, armedLabel, fn) {
+  if (btn.dataset.armed) { fn(); return; }
+  const old = btn.textContent;
+  btn.dataset.armed = '1'; btn.textContent = armedLabel; btn.classList.add('armed');
+  setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = old; btn.classList.remove('armed'); } }, 3000);
+}
+
+function hasContent(item, defaults) {
+  return Object.entries(item).some(([k, v]) => v && v !== defaults[k]);
+}
+const liveHolsters = (o) => o.holsters.filter((h) => hasContent(h, HOLSTER_DEFAULTS));
+const liveMags = (o) => o.mags.filter((m) => hasContent(m, MAG_DEFAULTS));
+const isUnsent = (o) => !o.sentAt || o.updatedAt > o.sentAt;
+function isBlank(o) {
+  return !Object.values(o.customer).some((v) => typeof v === 'string' && v.trim()) &&
+    !liveHolsters(o).length && !liveMags(o).length && !o.notes.trim();
+}
+
+// ---- Orders ----
+function nextOrderNumber(d) {
+  const ymd = String(d.getFullYear()).slice(2) + pad(d.getMonth() + 1) + pad(d.getDate());
+  const prefix = 'BH-' + ymd + '-';
+  const used = orders.filter((o) => o.number.startsWith(prefix)).map((o) => parseInt(o.number.slice(prefix.length), 10) || 0);
+  const seqKey = 'bh.seq.' + ymd;
+  const n = Math.max(load(seqKey, 0), ...used, 0) + 1;
+  try { localStorage.setItem(seqKey, JSON.stringify(n)); } catch (e) {}
+  return prefix + pad(n);
+}
+const newHolster = () => ({ ...HOLSTER_DEFAULTS });
+const newMag = () => ({ ...MAG_DEFAULTS });
+function createOrder() {
+  const now = new Date();
+  return {
+    id: now.getTime().toString(36) + Math.random().toString(36).slice(2, 6),
+    number: nextOrderNumber(now),
+    createdAt: now.getTime(),
+    updatedAt: now.getTime(),
+    sentAt: null,
+    customer: { name: '', phone: '', email: '', street: '', city: '', state: '', zip: '', shipSame: true, shipStreet: '', shipCity: '', shipState: '', shipZip: '' },
+    holsters: [newHolster()],
+    mags: [],
+    notes: '',
+  };
+}
+
+function problems(o) {
+  const p = [];
+  const c = o.customer;
+  if (!c.name.trim()) p.push(['c-name', 'Customer name']);
+  if (!c.phone.trim() && !c.email.trim()) p.push(['c-phone', 'Phone or email']);
+  const hs = liveHolsters(o), ms = liveMags(o);
+  if (!hs.length && !ms.length) p.push(['add-holster', 'Add a holster or mag carrier']);
+  o.holsters.forEach((h, i) => {
+    if (!hasContent(h, HOLSTER_DEFAULTS)) return;
+    const n = 'Holster ' + (i + 1) + ': ', q = 'h' + i;
+    if (!h.hand) p.push([q + '-hand', n + 'right or left hand']);
+    if (!h.carry) p.push([q + '-carry', n + 'IWB or OWB']);
+    if (h.carry === 'IWB' && !h.iwbStyle) p.push([q + '-iwbStyle', n + 'IWB style']);
+    if (h.carry === 'IWB' && h.iwbStyle === 'Other' && !(h.iwbOther || '').trim()) p.push([q + '-iwbOther', n + 'instructions for "Other"']);
+    if (h.carry === 'OWB' && !h.owbStyle) p.push([q + '-owbStyle', n + 'OWB style']);
+    if (h.carry === 'OWB' && h.owbStyle === 'Taco' && !h.attach) p.push([q + '-attach', n + 'belt attachment']);
+    if (h.carry === 'OWB' && h.owbStyle === 'QLS' && !h.qlsDrop) p.push([q + '-qlsDrop', n + 'mid-drop or low-drop']);
+    if (!(h.gun || '').trim()) p.push([q + '-gun', n + 'gun make and model']);
+    if (h.light === 'With light' && !(h.lightModel || '').trim()) p.push([q + '-lightModel', n + 'which light']);
+    if (h.material === 'Custom Print' && !(h.materialCustom || '').trim()) p.push([q + '-materialCustom', n + 'custom print description']);
+  });
+  o.mags.forEach((m, i) => {
+    if (!hasContent(m, MAG_DEFAULTS)) return;
+    const n = 'Mag carrier ' + (i + 1) + ': ', q = 'm' + i;
+    if (!m.type) p.push([q + '-type', n + 'carrier type']);
+    if (m.finish === 'Custom Print' && !(m.print || '').trim()) p.push([q + '-print', n + 'custom print description']);
+  });
+  return p;
+}
+
+// ---- Views ----
+function show(view) {
+  ['home', 'order', 'send'].forEach((v) => { $('#' + v).hidden = v !== view; });
+  window.scrollTo(0, 0);
+}
+
+function holsterSummary(h) {
+  const style = h.carry === 'IWB' ? h.iwbStyle : h.carry === 'OWB' ? [h.owbLevel, h.owbStyle].filter(Boolean).join(' ') : '';
+  return [h.hand ? h.hand[0] + 'H' : '', h.carry, style, h.gun].filter(Boolean).join(' ');
+}
+function orderSummary(o) {
+  const parts = liveHolsters(o).map(holsterSummary);
+  const m = liveMags(o).length;
+  if (m) parts.push(m + ' mag carrier' + (m > 1 ? 's' : ''));
+  return parts.join(' · ') || 'No items yet';
+}
+
+function renderHome() {
+  const list = $('#order-list');
+  const sorted = [...orders].sort((a, b) => b.createdAt - a.createdAt);
+  list.innerHTML = sorted.map((o) => {
+    let pill;
+    if (!isUnsent(o)) pill = '<span class="pill sent">Emailed</span>';
+    else if (problems(o).length) pill = '<span class="pill todo">Needs info</span>';
+    else pill = '<span class="pill ready">' + (o.sentAt ? 'Changed' : 'Ready') + '</span>';
+    return `<li><button type="button" data-open="${o.id}">
+      <span class="o-num">${esc(o.number)} · ${esc(fmtTime(o.createdAt))}</span>${pill}
+      <span class="o-name">${esc(o.customer.name || 'No name yet')}</span>
+      <span class="o-sum">${esc(orderSummary(o))}</span>
+    </button></li>`;
+  }).join('');
+  $('#empty').hidden = orders.length > 0;
+  const unsent = orders.filter(isUnsent).length;
+  $('#tally-line').textContent = orders.length ? `${orders.length} total · ${unsent} not emailed` : '';
+  $('#go-send').textContent = unsent ? `Email ${unsent} order${unsent > 1 ? 's' : ''} to support` : 'Email orders to support';
+  $('#clear-sent').hidden = !orders.some((o) => !isUnsent(o));
+}
+
+// ---- Form building ----
+function chips(prefix, field, options, value, cls = '') {
+  return `<div class="chips ${cls}" id="${prefix}-${field}">` + options.map((opt, k) => {
+    const [val, label] = Array.isArray(opt) ? opt : [opt, opt];
+    return `<label class="chip"><input type="radio" id="${prefix}-${field}-${k}" name="${prefix}-${field}" data-field="${field}" value="${esc(val)}"${value === val ? ' checked' : ''}><span>${esc(label)}</span></label>`;
+  }).join('') + '</div>';
+}
+function ringChips(prefix, field, value) {
+  return `<div class="chips" id="${prefix}-${field}">` + RING_COLORS.map(([name, hex], k) =>
+    `<label class="chip"><input type="radio" id="${prefix}-${field}-${k}" name="${prefix}-${field}" data-field="${field}" value="${esc(name)}"${value === name ? ' checked' : ''}><span><i style="--sw:${hex}"></i>${esc(name)}</span></label>`
+  ).join('') + '</div>';
+}
+const group = (label, inner, req) => `<fieldset class="field"><legend${req ? ' class="req"' : ''}>${label}</legend>${inner}</fieldset>`;
+function input(id, field, label, value, opts = {}) {
+  const attrs = [
+    `type="${opts.type || 'text'}"`, `id="${id}"`, `data-field="${field}"`, `value="${esc(value)}"`,
+    opts.list ? `list="${opts.list}"` : '', opts.placeholder ? `placeholder="${esc(opts.placeholder)}"` : '',
+    opts.inputmode ? `inputmode="${opts.inputmode}"` : '', `autocapitalize="${opts.cap || 'words'}"`,
+  ].filter(Boolean).join(' ');
+  return `<div class="field"><label for="${id}"${opts.req ? ' class="req"' : ''}>${label}</label><input ${attrs}></div>`;
+}
+function area(id, field, label, value, placeholder, req) {
+  return `<div class="field"><label for="${id}"${req ? ' class="req"' : ''}>${label}</label><textarea id="${id}" data-field="${field}" placeholder="${esc(placeholder || '')}" autocapitalize="sentences">${esc(value)}</textarea></div>`;
+}
+
+function customerCard(c) {
+  return `<section class="card" data-scope="customer">
+    <div class="card-head"><h2>Customer</h2></div>
+    ${input('c-name', 'name', 'Name', c.name, { req: true })}
+    <div class="row">
+      ${input('c-phone', 'phone', 'Phone', c.phone, { type: 'tel', inputmode: 'tel' })}
+      ${input('c-email', 'email', 'Email', c.email, { type: 'email', inputmode: 'email', cap: 'none' })}
+    </div>
+    ${input('c-street', 'street', 'Street address', c.street)}
+    <div class="row addr">
+      ${input('c-city', 'city', 'City', c.city)}
+      ${input('c-state', 'state', 'State', c.state, { cap: 'characters' })}
+      ${input('c-zip', 'zip', 'ZIP', c.zip, { inputmode: 'numeric' })}
+    </div>
+    <label class="check"><input type="checkbox" id="c-shipSame" data-field="shipSame"${c.shipSame ? ' checked' : ''}> Ship to this address</label>
+    <div class="sub" data-if="shipSame=false">
+      <span class="lbl">Shipping address</span>
+      ${input('c-shipStreet', 'shipStreet', 'Street address', c.shipStreet)}
+      <div class="row addr">
+        ${input('c-shipCity', 'shipCity', 'City', c.shipCity)}
+        ${input('c-shipState', 'shipState', 'State', c.shipState, { cap: 'characters' })}
+        ${input('c-shipZip', 'shipZip', 'ZIP', c.shipZip, { inputmode: 'numeric' })}
+      </div>
+    </div>
+  </section>`;
+}
+
+function holsterCard(h, i) {
+  const p = 'h' + i;
+  return `<section class="card" data-scope="holster" data-index="${i}">
+    <div class="card-head"><h2><span class="kind">Holster</span> ${i + 1}</h2>
+      <button type="button" class="btn-link danger" data-remove="holster" data-index="${i}">Remove</button></div>
+    ${group('Hand', chips(p, 'hand', HANDS, h.hand, 'big'), true)}
+    ${group('Carry', chips(p, 'carry', CARRY, h.carry, 'big'), true)}
+    <div class="sub" data-if="carry=IWB">
+      ${group('IWB style', chips(p, 'iwbStyle', IWB_STYLES, h.iwbStyle), true)}
+      <div data-if="iwbStyle=Other">${area(p + '-iwbOther', 'iwbOther', 'Instructions for Other', h.iwbOther, 'Describe the build', true)}</div>
+      ${group('Clip', chips(p, 'clip', IWB_CLIPS, h.clip))}
+    </div>
+    <div class="sub" data-if="carry=OWB">
+      ${group('Level', chips(p, 'owbLevel', OWB_LEVELS, h.owbLevel))}
+      ${group('OWB style', chips(p, 'owbStyle', OWB_STYLES, h.owbStyle), true)}
+      <div data-if="owbStyle=Taco">${group('Belt attachment', chips(p, 'attach', TACO_ATTACH, h.attach), true)}</div>
+      <div data-if="owbStyle=QLS">${group('QLS drop', chips(p, 'qlsDrop', QLS_DROP, h.qlsDrop), true)}</div>
+    </div>
+    ${input(p + '-gun', 'gun', 'Gun make &amp; model', h.gun, { list: 'guns', placeholder: 'e.g. Glock 19', req: true })}
+    ${group('Weapon light', chips(p, 'light', LIGHT, h.light))}
+    <div data-if="light=With light">${input(p + '-lightModel', 'lightModel', 'Which light', h.lightModel, { list: 'lights', placeholder: 'e.g. Streamlight TLR-7A', req: true })}</div>
+    ${group('Material / print', chips(p, 'material', MATERIALS, h.material))}
+    <div data-if="material=Custom Print">${area(p + '-materialCustom', 'materialCustom', 'Custom print / design', h.materialCustom, 'Describe the print or design', true)}</div>
+    ${group('Accent ring color', ringChips(p, 'ring', h.ring))}
+  </section>`;
+}
+
+function magCard(m, i) {
+  const p = 'm' + i;
+  return `<section class="card" data-scope="mag" data-index="${i}">
+    <div class="card-head"><h2><span class="kind">Mag carrier</span> ${i + 1}</h2>
+      <button type="button" class="btn-link danger" data-remove="mag" data-index="${i}">Remove</button></div>
+    ${group('Carrier type', chips(p, 'type', MAG_TYPES, m.type), true)}
+    ${group('Finish', chips(p, 'finish', MAG_FINISH, m.finish))}
+    <div data-if="finish=Custom Print">${area(p + '-print', 'print', 'Custom print', m.print, 'Describe the print', true)}</div>
+    ${group('Accent ring color', ringChips(p, 'ring', m.ring))}
+  </section>`;
+}
+
+function renderForm() {
+  const o = current;
+  $('#o-num').textContent = o.number;
+  $('#o-date').textContent = fmtDateTime(o.createdAt);
+  $('#form-body').innerHTML =
+    customerCard(o.customer) +
+    o.holsters.map(holsterCard).join('') +
+    o.mags.map(magCard).join('') +
+    `<div class="add-row">
+      <button type="button" class="btn" id="add-holster">+ Add holster</button>
+      <button type="button" class="btn" id="add-mag">+ Add mag carrier</button>
+    </div>
+    <section class="card" data-scope="order">
+      ${area('o-notes', 'notes', 'Special instructions / notes', o.notes, 'Anything the shop should know')}
+      <p class="hint">Tip: tap a selected option again to clear it.</p>
+    </section>
+    <button type="button" class="btn-link danger" id="delete-order">Delete this order</button>`;
+  document.querySelectorAll('#form-body [data-scope]').forEach(applyVisibility);
+}
+
+function scopeObj(scope) {
+  const s = scope.dataset.scope, i = +scope.dataset.index;
+  if (s === 'customer') return current.customer;
+  if (s === 'holster') return current.holsters[i];
+  if (s === 'mag') return current.mags[i];
+  return current;
+}
+function applyVisibility(scope) {
+  const obj = scopeObj(scope);
+  scope.querySelectorAll('[data-if]').forEach((el) => {
+    const [f, val] = el.dataset.if.split('=');
+    el.hidden = String(obj[f] ?? '') !== val;
+  });
+}
+function setField(el, value) {
+  const scope = el.closest('[data-scope]');
+  scopeObj(scope)[el.dataset.field] = value;
+  applyVisibility(scope);
+  current.updatedAt = Date.now();
+  persist();
+  const bad = el.closest('.bad'); if (bad) bad.classList.remove('bad');
+}
+
+const form = $('#form-body');
+form.addEventListener('submit', (e) => e.preventDefault());
+form.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!el.dataset.field || el.type === 'radio' || el.type === 'checkbox') return;
+  setField(el, el.value);
+});
+form.addEventListener('change', (e) => {
+  const el = e.target;
+  if (!el.dataset.field) return;
+  if (el.type === 'checkbox') setField(el, el.checked);
+  else if (el.type === 'radio') setField(el, el.value);
+});
+// Tap a selected chip again to clear it.
+let wasChecked = null;
+form.addEventListener('pointerdown', (e) => {
+  const chip = e.target.closest('.chip');
+  wasChecked = chip ? chip.querySelector('input').checked : null;
+});
+form.addEventListener('click', (e) => {
+  const el = e.target;
+  if (el.matches && el.matches('.chip input[type=radio]') && wasChecked === true) {
+    el.checked = false; wasChecked = null; setField(el, '');
+    return;
+  }
+  if (el.id === 'add-holster') { current.holsters.push(newHolster()); touchAndRerender('#h' + (current.holsters.length - 1) + '-hand'); }
+  else if (el.id === 'add-mag') { current.mags.push(newMag()); touchAndRerender('#m' + (current.mags.length - 1) + '-type'); }
+  else if (el.dataset.remove) {
+    confirmTap(el, 'Tap to remove', () => {
+      const arr = el.dataset.remove === 'holster' ? current.holsters : current.mags;
+      arr.splice(+el.dataset.index, 1);
+      touchAndRerender();
+    });
+  } else if (el.id === 'delete-order') {
+    confirmTap(el, 'Tap again to delete ' + current.number, () => {
+      orders = orders.filter((o) => o !== current); current = null; persist();
+      toast('Order deleted'); goHome();
+    });
+  }
+});
+function touchAndRerender(scrollTo) {
+  current.updatedAt = Date.now(); persist(); renderForm();
+  if (scrollTo) { const t = $(scrollTo); if (t) t.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+
+function openOrder(o) {
+  current = o;
+  $('#errors').hidden = true;
+  renderForm();
+  show('order');
+}
+function goHome() {
+  if (current && isBlank(current)) { orders = orders.filter((o) => o !== current); persist(); }
+  current = null;
+  renderHome();
+  show('home');
+}
+function finishOrder() {
+  // Drop empty item cards before checking.
+  current.holsters = current.holsters.filter((h) => hasContent(h, HOLSTER_DEFAULTS));
+  current.mags = current.mags.filter((m) => hasContent(m, MAG_DEFAULTS));
+  const p = problems(current);
+  if (!p.length) { persist(); toast(current.number + ' saved'); goHome(); return; }
+  if (!current.holsters.length) current.holsters.push(newHolster());
+  renderForm();
+  const box = $('#errors');
+  box.innerHTML = `<strong>Still needed before this order is complete:</strong>
+    <ul>${p.map(([, msg]) => `<li>${esc(msg)}</li>`).join('')}</ul>
+    <div class="btns"><button type="button" class="btn" id="fix-first">Show me</button>
+    <button type="button" class="btn-link danger" id="finish-later">Save and finish later</button></div>`;
+  box.hidden = false;
+  p.forEach(([id]) => { const el = document.getElementById(id); if (el) (el.closest('.field') || el).classList.add('bad'); });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  $('#fix-first').onclick = () => {
+    const el = document.getElementById(p[0][0]);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.focus({ preventScroll: true }); }
+  };
+  $('#finish-later').onclick = () => { persist(); toast(current.number + ' saved as incomplete'); goHome(); };
+}
+
+$('#new-order').onclick = () => {
+  const o = createOrder();
+  orders.push(o); persist();
+  openOrder(o);
+  setTimeout(() => $('#c-name').focus(), 50);
+};
+$('#order-list').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-open]');
+  if (b) openOrder(orders.find((o) => o.id === b.dataset.open));
+});
+$('#done').onclick = finishOrder;
+$('#back').onclick = goHome;
+$('#clear-sent').onclick = (e) => confirmTap(e.target, 'Tap again to remove emailed orders', () => {
+  orders = orders.filter(isUnsent); persist(); renderHome(); toast('Emailed orders removed');
+});
+
+// ---- Export ----
+function shipTo(c) {
+  if (c.shipSame) return 'Same as above';
+  return [c.shipStreet, [c.shipCity, c.shipState].filter(Boolean).join(', '), c.shipZip].filter(Boolean).join(' ') || '(not given)';
+}
+function homeAddr(c) {
+  return [c.street, [c.city, c.state].filter(Boolean).join(', '), c.zip].filter(Boolean).join(' ');
+}
+function holsterLines(h) {
+  const L = [];
+  L.push(['Hand', h.hand ? h.hand + ' hand' : '—']);
+  if (h.carry === 'IWB') {
+    L.push(['Carry', 'Inside the waistband (IWB)']);
+    L.push(['Style', h.iwbStyle === 'Other' ? 'Other: ' + (h.iwbOther || '(no instructions)') : h.iwbStyle || '—']);
+    L.push(['Clip', h.clip || '—']);
+  } else if (h.carry === 'OWB') {
+    L.push(['Carry', 'Outside the waistband (OWB)']);
+    L.push(['Level', h.owbLevel || '—']);
+    let s = h.owbStyle || '—';
+    if (h.owbStyle === 'Taco') s += ', ' + (h.attach || 'attachment not chosen');
+    if (h.owbStyle === 'QLS') s += ', ' + (h.qlsDrop || 'drop not chosen');
+    L.push(['Style', s]);
+  } else L.push(['Carry', '—']);
+  L.push(['Gun', h.gun || '—']);
+  L.push(['Light', h.light === 'With light' ? 'Yes, ' + (h.lightModel || 'model not given') : h.light === 'No light' ? 'No light' : '—']);
+  L.push(['Material', h.material === 'Custom Print' ? 'Custom print: ' + (h.materialCustom || '(not described)') : h.material || '—']);
+  L.push(['Accent ring', h.ring || 'None']);
+  return L;
+}
+function magLines(m) {
+  return [
+    ['Type', m.type || '—'],
+    ['Finish', m.finish === 'Custom Print' ? 'Custom print: ' + (m.print || '(not described)') : m.finish || '—'],
+    ['Accent ring', m.ring || 'None'],
+  ];
+}
+const fmtLines = (L) => L.map(([k, v]) => '  ' + (k + ':').padEnd(13) + v).join('\n');
+function orderText(o) {
+  const c = o.customer;
+  const out = [];
+  out.push('ORDER ' + o.number + '   ' + fmtDateTime(o.createdAt));
+  const missing = problems(o);
+  if (missing.length) out.push('** INCOMPLETE: missing ' + missing.map(([, m]) => m).join('; ') + ' **');
+  out.push('', 'CUSTOMER', fmtLines([
+    ['Name', c.name || '—'], ['Phone', c.phone || '—'], ['Email', c.email || '—'],
+    ['Address', homeAddr(c) || '—'], ['Ship to', shipTo(c)],
+  ]));
+  liveHolsters(o).forEach((h, i) => out.push('', 'HOLSTER ' + (i + 1), fmtLines(holsterLines(h))));
+  liveMags(o).forEach((m, i) => out.push('', 'MAG CARRIER ' + (i + 1), fmtLines(magLines(m))));
+  if (o.notes.trim()) out.push('', 'SPECIAL INSTRUCTIONS', '  ' + o.notes.trim().replace(/\n/g, '\n  '));
+  return out.join('\n');
+}
+const RULE = '\n\n' + '='.repeat(44) + '\n\n';
+function batchText(list) {
+  const head = `Buck's Holsters show orders\n${list.length} order${list.length === 1 ? '' : 's'} · sent ${fmtDateTime(Date.now())}`;
+  return head + RULE + list.map(orderText).join(RULE);
+}
+
+const CSV_COLS = ['Order #', 'Date', 'Customer', 'Phone', 'Email', 'Address', 'Ship To', 'Item', 'Hand', 'Carry', 'IWB Style', 'Other Instructions', 'Clip', 'OWB Level', 'OWB Style', 'Belt Attachment', 'QLS Drop', 'Gun', 'Light', 'Light Model', 'Material / Finish', 'Custom Print', 'Accent Ring', 'Mag Carrier Type', 'Special Instructions'];
+function csvRows(list) {
+  const rows = [CSV_COLS];
+  list.forEach((o) => {
+    const c = o.customer;
+    const base = [o.number, fmtDateTime(o.createdAt), c.name, c.phone, c.email, homeAddr(c), shipTo(c)];
+    const items = [];
+    liveHolsters(o).forEach((h, i) => {
+      const iwb = h.carry === 'IWB', owb = h.carry === 'OWB';
+      items.push(['Holster ' + (i + 1), h.hand, h.carry, iwb ? h.iwbStyle : '', iwb && h.iwbStyle === 'Other' ? h.iwbOther : '',
+        iwb ? h.clip : '', owb ? h.owbLevel : '', owb ? h.owbStyle : '', owb && h.owbStyle === 'Taco' ? h.attach : '',
+        owb && h.owbStyle === 'QLS' ? h.qlsDrop : '', h.gun, h.light, h.light === 'With light' ? h.lightModel : '',
+        h.material, h.material === 'Custom Print' ? h.materialCustom : '', h.ring, '']);
+    });
+    liveMags(o).forEach((m, i) => {
+      items.push(['Mag carrier ' + (i + 1), '', '', '', '', '', '', '', '', '', '', '', '',
+        m.finish, m.finish === 'Custom Print' ? m.print : '', m.ring, m.type]);
+    });
+    if (!items.length) items.push(Array(17).fill(''));
+    items.forEach((it) => rows.push([...base, ...it, o.notes]));
+  });
+  return rows.map((r) => r.map((v) => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\r\n');
+}
+
+let sendList = [];
+function renderSend() {
+  const all = $('#send-all').checked;
+  sendList = orders.filter((o) => all || isUnsent(o)).sort((a, b) => a.createdAt - b.createdAt);
+  const n = sendList.length;
+  $('#send-count').textContent = n;
+  $('#send-count-label').textContent = n === 1 ? 'order to send' : 'orders to send';
+  const incomplete = sendList.filter((o) => problems(o).length).length;
+  $('#send-sub').textContent = incomplete ? incomplete + ' marked incomplete' : '';
+  $('#send-addr').textContent = SUPPORT_EMAIL;
+  const text = n ? batchText(sendList) : 'No orders to send. Orders you have already emailed are hidden unless you include them above.';
+  $('#send-preview').textContent = text;
+  const subject = `Show orders ${fmtDate(Date.now())} (${n})`;
+  $('#mail-link').href = 'mailto:' + SUPPORT_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+  ['#mail-link', '#share-csv', '#copy-text', '#mark-sent'].forEach((s) => $(s).toggleAttribute('aria-disabled', !n));
+  $('#mark-sent').textContent = n ? `Mark ${n} order${n > 1 ? 's' : ''} as emailed` : 'Nothing to mark';
+}
+$('#go-send').onclick = () => { $('#send-all').checked = false; renderSend(); show('send'); };
+$('#send-back').onclick = () => { renderHome(); show('home'); };
+$('#send-all').onchange = renderSend;
+$('#mail-link').addEventListener('click', (e) => { if (!sendList.length) e.preventDefault(); });
+
+$('#copy-text').onclick = async () => {
+  if (!sendList.length) return;
+  try { await navigator.clipboard.writeText($('#send-preview').textContent); toast('Orders copied. Paste them into an email.'); }
+  catch (e) {
+    const r = document.createRange(); r.selectNodeContents($('#send-preview'));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    toast('Text selected. Use Copy from your phone menu.');
+  }
+};
+$('#share-csv').onclick = async () => {
+  if (!sendList.length) return;
+  const name = 'bucks-holsters-orders-' + new Date().toISOString().slice(0, 10) + '.csv';
+  const blob = new Blob([csvRows(sendList)], { type: 'text/csv' });
+  const file = new File([blob], name, { type: 'text/csv' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Buck's Holsters orders", text: 'Send to ' + SUPPORT_EMAIL });
+      return;
+    }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  try {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('Spreadsheet saved to Downloads');
+  } catch (e) { toast('This browser cannot share files. Use Copy instead.'); }
+};
+$('#mark-sent').onclick = (e) => {
+  if (!sendList.length) return;
+  confirmTap(e.target, 'Tap again to confirm', () => {
+    const now = Date.now();
+    sendList.forEach((o) => { o.sentAt = now; if (o.updatedAt > now) o.updatedAt = now; });
+    persist(); toast(sendList.length + ' marked as emailed'); renderHome(); show('home');
+  });
+};
+
+renderHome();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+<!--/APP-->
+</body>
+</html>
