@@ -86,7 +86,21 @@ button, input, textarea, select { font: inherit; color: inherit; }
   display: flex; align-items: center; justify-content: center; gap: 14px;
 }
 .btn-hero span { font-size: 44px; font-weight: 600; line-height: .8; }
-.home-actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+.show-actions { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 6px 0 12px; }
+.show-actions .btn-hero { min-height: 120px; }
+.btn-tile {
+  display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 96px; cursor: pointer;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 16px; color: var(--ink);
+  font: 700 26px/1 var(--display); letter-spacing: .03em; text-transform: uppercase;
+}
+.btn-tile .big-num { color: var(--brass); }
+.center { text-align: center; margin-top: 12px; }
+.chip-btn {
+  min-height: 46px; padding: 0 16px; border: 1.5px solid var(--line); border-radius: 10px;
+  background: var(--bg); font-weight: 600; cursor: pointer;
+}
+.chip-btn.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.s-dates { font-weight: 700; color: var(--brass); font-size: 14px; font-variant-numeric: tabular-nums; }
 .tally { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 22px 0 10px; align-items: baseline; justify-content: space-between; }
 .tally h2 { font-size: 22px; }
 .tally p { margin: 0; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
@@ -126,9 +140,11 @@ button, input, textarea, select { font: inherit; color: inherit; }
 }
 .field > legend { margin-bottom: 8px; }
 .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.row > * { min-width: 0; }
+input[type=date] { min-width: 0; max-width: 100%; display: block; -webkit-appearance: none; appearance: none; }
 .row.addr { grid-template-columns: 2fr 1fr 1.2fr; }
 @media (max-width: 480px) { .row.addr { grid-template-columns: 1fr 1fr; } .row.addr > :first-child { grid-column: 1 / -1; } }
-input[type=text], input[type=email], input[type=tel], textarea {
+input[type=text], input[type=email], input[type=tel], input[type=date], textarea {
   width: 100%; min-height: 48px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px;
   background: var(--bg); font-size: 17px;
 }
@@ -196,27 +212,81 @@ pre.preview {
       </div>
     </header>
 
-    <button id="new-order" class="btn-hero" type="button"><span aria-hidden="true">+</span> New Order</button>
-    <div class="home-actions">
-      <button id="go-send" class="btn wide" type="button">Email orders to support</button>
-    </div>
+    <button id="new-show" class="btn-hero" type="button"><span aria-hidden="true">+</span> New Show</button>
 
     <div class="tally">
-      <h2>Orders on this device</h2>
-      <p id="tally-line"></p>
+      <h2>Shows</h2>
+      <p id="show-tally"></p>
+    </div>
+    <ul id="show-list" class="orders"></ul>
+    <p id="shows-empty" class="empty">No shows yet. Tap <strong>New Show</strong>, enter the show name and dates, and you're ready to take orders.</p>
+  </section>
+
+  <!-- NEW / EDIT SHOW -->
+  <section id="show-form" hidden>
+    <div class="bar">
+      <button id="sf-back" class="btn-ghost" type="button">‹ Back</button>
+      <div class="bar-id"><strong id="sf-title">New show</strong></div>
+      <span></span>
+    </div>
+    <form id="sf" class="card" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="sf-name" class="req">Show name</label>
+        <input type="text" id="sf-name" placeholder="e.g. Tulsa Arms Show" autocapitalize="words">
+      </div>
+      <div class="row">
+        <div class="field"><label for="sf-start" class="req">First day</label><input type="date" id="sf-start"></div>
+        <div class="field"><label for="sf-end" class="req">Last day</label><input type="date" id="sf-end"></div>
+      </div>
+      <fieldset class="field">
+        <legend>Quick length</legend>
+        <div class="chips" id="sf-len">
+          <button type="button" class="chip-btn" data-days="1">1 day</button>
+          <button type="button" class="chip-btn" data-days="2">2 days</button>
+          <button type="button" class="chip-btn" data-days="3">3 days</button>
+          <button type="button" class="chip-btn" data-days="4">4 days</button>
+        </div>
+      </fieldset>
+      <p class="hint" id="sf-summary"></p>
+      <div id="sf-error" class="errors" role="alert" hidden></div>
+      <button type="submit" id="sf-save" class="btn-primary">Create show</button>
+      <button type="button" id="sf-delete" class="btn-link danger" hidden>Delete this show</button>
+    </form>
+  </section>
+
+  <!-- SHOW -->
+  <section id="show" hidden>
+    <div class="bar">
+      <button id="show-back" class="btn-ghost" type="button">‹ Shows</button>
+      <div class="bar-id"><strong id="show-name"></strong><span id="show-dates"></span></div>
+      <button id="show-edit" class="btn-ghost" type="button">Edit</button>
+    </div>
+    <div class="show-actions">
+      <button id="new-order" class="btn-hero" type="button"><span aria-hidden="true">+</span> New Order</button>
+      <button id="existing-orders" class="btn-tile" type="button">
+        <span class="big-num" id="show-count">0</span>
+        <span>Existing orders</span>
+      </button>
+    </div>
+    <button id="go-send" class="btn wide" type="button">Email this show's orders</button>
+    <p class="hint center" id="show-hint"></p>
+  </section>
+
+  <!-- EXISTING ORDERS -->
+  <section id="orders" hidden>
+    <div class="bar">
+      <button id="orders-back" class="btn-ghost" type="button">‹ Show</button>
+      <div class="bar-id"><strong>Existing orders</strong><span id="orders-sub"></span></div>
+      <span></span>
     </div>
     <ul id="order-list" class="orders"></ul>
-    <p id="empty" class="empty">No orders yet. Tap <strong>New Order</strong> to start one. Each order gets its own number and today's date, and saves as you type.</p>
-
-    <div class="footer-actions">
-      <button id="clear-sent" class="btn-link danger" type="button" hidden>Remove emailed orders from this device</button>
-    </div>
+    <p id="empty" class="empty">No orders for this show yet. Go back and tap <strong>New Order</strong>.</p>
   </section>
 
   <!-- ORDER FORM -->
   <section id="order" hidden>
     <div class="bar">
-      <button id="back" class="btn-ghost" type="button" aria-label="Back to orders">‹ Orders</button>
+      <button id="back" class="btn-ghost" type="button" aria-label="Back">‹ Back</button>
       <div class="bar-id"><strong id="o-num"></strong><span id="o-date"></span></div>
       <button id="done" class="btn-primary" type="button">Done</button>
     </div>
@@ -227,7 +297,7 @@ pre.preview {
   <!-- SEND -->
   <section id="send" hidden>
     <div class="bar">
-      <button id="send-back" class="btn-ghost" type="button">‹ Orders</button>
+      <button id="send-back" class="btn-ghost" type="button">‹ Show</button>
       <div class="bar-id"><strong>Email orders</strong><span id="send-sub"></span></div>
       <span></span>
     </div>
@@ -238,19 +308,13 @@ pre.preview {
         <p class="hint" id="send-count-label">orders to send</p>
       </div>
       <div class="addr-line"><span class="lbl">To</span> <span class="addr" id="send-addr"></span></div>
-      <label class="check"><input type="checkbox" id="send-all"> Include orders already emailed</label>
+      <p class="hint" id="send-warn" hidden></p>
       <div class="send-actions">
         <a id="mail-link" class="btn-primary" href="#">Open in Mail app</a>
         <button id="share-csv" class="btn" type="button">Share spreadsheet file (CSV)</button>
         <button id="copy-text" class="btn" type="button">Copy all orders as text</button>
       </div>
       <p class="hint">Open in Mail fills in the address, subject and every order. If your phone's mail app doesn't open, copy the orders and paste them into an email to the address above.</p>
-    </div>
-
-    <div class="card">
-      <h2>After the email goes out</h2>
-      <p class="hint">Marking orders as emailed keeps them on this device but moves them out of the next batch. If you edit an emailed order later, it goes back into the batch.</p>
-      <button id="mark-sent" class="btn" type="button">Mark these orders as emailed</button>
     </div>
 
     <h2 style="margin:6px 0 10px;font-size:20px">Email preview</h2>
@@ -275,7 +339,8 @@ pre.preview {
 
 <script>
 'use strict';
-const SUPPORT_EMAIL = 'support@bucksholsters.com';
+// Where show orders are emailed. TESTING: switch back to 'support@bucksholsters.com' when the app is final.
+const ORDER_EMAIL = 'Erin@bucksholsters.com';
 
 // ---- Option lists (edit these to add choices) ----
 const RING_COLORS = [
@@ -304,27 +369,46 @@ const HOLSTER_DEFAULTS = { material: 'Black' };
 const MAG_DEFAULTS = { finish: 'Match Holster' };
 
 // ---- Storage ----
-const KEY = 'bh.orders.v1';
+const KEY = 'bh.data.v2';
 let storageWarned = false;
 function load(key, fallback) {
   try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; }
 }
 function persist() {
-  try { localStorage.setItem(KEY, JSON.stringify(orders)); }
+  try { localStorage.setItem(KEY, JSON.stringify(db)); }
   catch (e) {
     if (!storageWarned) { storageWarned = true; toast('This browser is blocking storage. Orders will be lost if you close the app.'); }
   }
 }
-let orders = load(KEY, []);
+const db = load(KEY, { shows: [], orders: [] });
+let currentShow = null;
 let current = null;
+let orderReturn = 'show';
+const showOrders = (s) => db.orders.filter((o) => o.showId === s.id).sort((a, b) => a.seq - b.seq);
 
 // ---- Helpers ----
 const $ = (s) => document.querySelector(s);
 const pad = (n) => String(n).padStart(2, '0');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 const fmtTime = (t) => new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 const fmtDateTime = (t) => fmtDate(t) + ' ' + fmtTime(t);
+const fmtDayTime = (t) => new Date(t).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + fmtTime(t);
+
+// Show dates are stored as YYYY-MM-DD and handled as local calendar days.
+const parseDay = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const dayStr = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const addDays = (s, n) => { const d = parseDay(s); d.setDate(d.getDate() + n); return dayStr(d); };
+const dayCount = (a, b) => Math.round((parseDay(b) - parseDay(a)) / 864e5) + 1;
+function fmtRange(a, b) {
+  const A = parseDay(a), B = parseDay(b);
+  const md = { month: 'short', day: 'numeric' }, mdy = { month: 'short', day: 'numeric', year: 'numeric' };
+  if (a === b) return A.toLocaleDateString(undefined, mdy);
+  if (A.getFullYear() !== B.getFullYear()) return A.toLocaleDateString(undefined, mdy) + ' – ' + B.toLocaleDateString(undefined, mdy);
+  if (A.getMonth() === B.getMonth()) return A.toLocaleDateString(undefined, md) + '–' + B.getDate() + ', ' + B.getFullYear();
+  return A.toLocaleDateString(undefined, md) + ' – ' + B.toLocaleDateString(undefined, md) + ', ' + B.getFullYear();
+}
 
 let toastTimer;
 function toast(msg) {
@@ -344,32 +428,24 @@ function hasContent(item, defaults) {
 }
 const liveHolsters = (o) => o.holsters.filter((h) => hasContent(h, HOLSTER_DEFAULTS));
 const liveMags = (o) => o.mags.filter((m) => hasContent(m, MAG_DEFAULTS));
-const isUnsent = (o) => !o.sentAt || o.updatedAt > o.sentAt;
 function isBlank(o) {
   return !Object.values(o.customer).some((v) => typeof v === 'string' && v.trim()) &&
     !liveHolsters(o).length && !liveMags(o).length && !o.notes.trim();
 }
 
 // ---- Orders ----
-function nextOrderNumber(d) {
-  const ymd = String(d.getFullYear()).slice(2) + pad(d.getMonth() + 1) + pad(d.getDate());
-  const prefix = 'BH-' + ymd + '-';
-  const used = orders.filter((o) => o.number.startsWith(prefix)).map((o) => parseInt(o.number.slice(prefix.length), 10) || 0);
-  const seqKey = 'bh.seq.' + ymd;
-  const n = Math.max(load(seqKey, 0), ...used, 0) + 1;
-  try { localStorage.setItem(seqKey, JSON.stringify(n)); } catch (e) {}
-  return prefix + pad(n);
-}
+// Each show numbers its orders from 1. Numbers are never reused while the order exists.
+const nextSeq = (s) => Math.max(0, ...showOrders(s).map((o) => o.seq)) + 1;
 const newHolster = () => ({ ...HOLSTER_DEFAULTS });
 const newMag = () => ({ ...MAG_DEFAULTS });
-function createOrder() {
-  const now = new Date();
+function createOrder(s) {
+  const now = Date.now();
   return {
-    id: now.getTime().toString(36) + Math.random().toString(36).slice(2, 6),
-    number: nextOrderNumber(now),
-    createdAt: now.getTime(),
-    updatedAt: now.getTime(),
-    sentAt: null,
+    id: uid(),
+    showId: s.id,
+    seq: nextSeq(s),
+    createdAt: now,
+    updatedAt: now,
     customer: { name: '', phone: '', email: '', street: '', city: '', state: '', zip: '', shipSame: true, shipStreet: '', shipCity: '', shipState: '', shipZip: '' },
     holsters: [newHolster()],
     mags: [],
@@ -409,7 +485,7 @@ function problems(o) {
 
 // ---- Views ----
 function show(view) {
-  ['home', 'order', 'send'].forEach((v) => { $('#' + v).hidden = v !== view; });
+  ['home', 'show-form', 'show', 'orders', 'order', 'send'].forEach((v) => { $('#' + v).hidden = v !== view; });
   window.scrollTo(0, 0);
 }
 
@@ -423,26 +499,126 @@ function orderSummary(o) {
   if (m) parts.push(m + ' mag carrier' + (m > 1 ? 's' : ''));
   return parts.join(' · ') || 'No items yet';
 }
+const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
 
+// Home: list of shows, newest first.
 function renderHome() {
-  const list = $('#order-list');
-  const sorted = [...orders].sort((a, b) => b.createdAt - a.createdAt);
-  list.innerHTML = sorted.map((o) => {
-    let pill;
-    if (!isUnsent(o)) pill = '<span class="pill sent">Emailed</span>';
-    else if (problems(o).length) pill = '<span class="pill todo">Needs info</span>';
-    else pill = '<span class="pill ready">' + (o.sentAt ? 'Changed' : 'Ready') + '</span>';
+  const shows = [...db.shows].sort((a, b) => b.start.localeCompare(a.start) || b.createdAt - a.createdAt);
+  $('#show-list').innerHTML = shows.map((s) => {
+    const n = showOrders(s).length;
+    return `<li><button type="button" data-show="${s.id}">
+      <span class="s-dates">${esc(fmtRange(s.start, s.end))}</span><span class="pill ready">${plural(n, 'order')}</span>
+      <span class="o-name">${esc(s.name)}</span>
+    </button></li>`;
+  }).join('');
+  $('#shows-empty').hidden = shows.length > 0;
+  $('#show-tally').textContent = shows.length ? plural(shows.length, 'show') : '';
+}
+function goHome() {
+  current = null; currentShow = null;
+  renderHome();
+  show('home');
+}
+$('#new-show').onclick = () => openShowForm(null);
+$('#show-list').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-show]');
+  if (b) openShow(db.shows.find((s) => s.id === b.dataset.show));
+});
+
+// New / edit show.
+let editingShow = null;
+function openShowForm(s) {
+  editingShow = s;
+  const today = dayStr(new Date());
+  $('#sf-title').textContent = s ? 'Edit show' : 'New show';
+  $('#sf-name').value = s ? s.name : '';
+  $('#sf-start').value = s ? s.start : today;
+  $('#sf-end').value = s ? s.end : addDays(today, 1);
+  $('#sf-save').textContent = s ? 'Save changes' : 'Create show';
+  $('#sf-delete').hidden = !s;
+  $('#sf-error').hidden = true;
+  updateShowSummary();
+  show('show-form');
+  if (!s) setTimeout(() => $('#sf-name').focus(), 50);
+}
+function updateShowSummary() {
+  const a = $('#sf-start').value, b = $('#sf-end').value;
+  const ok = a && b && b >= a;
+  const n = ok ? dayCount(a, b) : 0;
+  $('#sf-summary').textContent = ok ? `${plural(n, 'day')}: ${fmtRange(a, b)}` : '';
+  document.querySelectorAll('#sf-len [data-days]').forEach((btn) => btn.classList.toggle('on', +btn.dataset.days === n));
+}
+$('#sf-start').addEventListener('change', () => {
+  const a = $('#sf-start').value, b = $('#sf-end').value;
+  if (a && (!b || b < a)) $('#sf-end').value = addDays(a, 1);
+  updateShowSummary();
+});
+$('#sf-end').addEventListener('change', updateShowSummary);
+$('#sf-len').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-days]');
+  if (!b) return;
+  const a = $('#sf-start').value || dayStr(new Date());
+  $('#sf-start').value = a;
+  $('#sf-end').value = addDays(a, +b.dataset.days - 1);
+  updateShowSummary();
+});
+$('#sf').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = $('#sf-name').value.trim(), a = $('#sf-start').value, b = $('#sf-end').value;
+  const errs = [];
+  if (!name) errs.push('Enter the show name.');
+  if (!a || !b) errs.push('Pick the first and last day of the show.');
+  else if (b < a) errs.push('The last day is before the first day.');
+  if (errs.length) {
+    $('#sf-error').innerHTML = errs.map(esc).join('<br>');
+    $('#sf-error').hidden = false;
+    return;
+  }
+  if (editingShow) Object.assign(editingShow, { name, start: a, end: b });
+  else { editingShow = { id: uid(), name, start: a, end: b, createdAt: Date.now() }; db.shows.push(editingShow); }
+  persist();
+  toast(name + ' saved');
+  openShow(editingShow);
+});
+$('#sf-back').onclick = () => (editingShow ? openShow(editingShow) : goHome());
+$('#sf-delete').onclick = (e) => {
+  const n = showOrders(editingShow).length;
+  confirmTap(e.target, n ? `Tap again to delete the show and its ${plural(n, 'order')}` : 'Tap again to delete the show', () => {
+    db.orders = db.orders.filter((o) => o.showId !== editingShow.id);
+    db.shows = db.shows.filter((s) => s !== editingShow);
+    persist(); toast('Show deleted'); goHome();
+  });
+};
+
+// Show page: New Order / Existing orders / Email.
+function openShow(s) {
+  currentShow = s; current = null;
+  $('#show-name').textContent = s.name;
+  $('#show-dates').textContent = fmtRange(s.start, s.end) + ' · ' + plural(dayCount(s.start, s.end), 'day');
+  const list = showOrders(s);
+  $('#show-count').textContent = list.length;
+  const inc = list.filter((o) => problems(o).length).length;
+  $('#show-hint').textContent = !list.length ? 'Orders for this show are numbered starting at #1.'
+    : inc ? `${plural(inc, 'order')} still ${inc === 1 ? 'needs' : 'need'} info.` : 'All orders are complete.';
+  show('show');
+}
+$('#show-back').onclick = goHome;
+$('#show-edit').onclick = () => openShowForm(currentShow);
+
+// Existing orders for the current show only.
+function openOrders() {
+  const list = showOrders(currentShow).reverse();
+  $('#orders-sub').textContent = currentShow.name + ' · ' + plural(list.length, 'order');
+  $('#order-list').innerHTML = list.map((o) => {
+    const pill = problems(o).length ? '<span class="pill todo">Needs info</span>' : '<span class="pill ready">Ready</span>';
     return `<li><button type="button" data-open="${o.id}">
-      <span class="o-num">${esc(o.number)} · ${esc(fmtTime(o.createdAt))}</span>${pill}
+      <span class="o-num"><strong>#${o.seq}</strong> · ${esc(fmtDayTime(o.createdAt))}</span>${pill}
       <span class="o-name">${esc(o.customer.name || 'No name yet')}</span>
       <span class="o-sum">${esc(orderSummary(o))}</span>
     </button></li>`;
   }).join('');
-  $('#empty').hidden = orders.length > 0;
-  const unsent = orders.filter(isUnsent).length;
-  $('#tally-line').textContent = orders.length ? `${orders.length} total · ${unsent} not emailed` : '';
-  $('#go-send').textContent = unsent ? `Email ${unsent} order${unsent > 1 ? 's' : ''} to support` : 'Email orders to support';
-  $('#clear-sent').hidden = !orders.some((o) => !isUnsent(o));
+  $('#empty').hidden = list.length > 0;
+  show('orders');
 }
 
 // ---- Form building ----
@@ -538,8 +714,8 @@ function magCard(m, i) {
 
 function renderForm() {
   const o = current;
-  $('#o-num').textContent = o.number;
-  $('#o-date').textContent = fmtDateTime(o.createdAt);
+  $('#o-num').textContent = 'Order #' + o.seq;
+  $('#o-date').textContent = currentShow.name + ' · ' + fmtDayTime(o.createdAt);
   $('#form-body').innerHTML =
     customerCard(o.customer) +
     o.holsters.map(holsterCard).join('') +
@@ -613,9 +789,9 @@ form.addEventListener('click', (e) => {
       touchAndRerender();
     });
   } else if (el.id === 'delete-order') {
-    confirmTap(el, 'Tap again to delete ' + current.number, () => {
-      orders = orders.filter((o) => o !== current); current = null; persist();
-      toast('Order deleted'); goHome();
+    confirmTap(el, 'Tap again to delete Order #' + current.seq, () => {
+      db.orders = db.orders.filter((o) => o !== current); current = null; persist();
+      toast('Order deleted'); leaveOrder();
     });
   }
 });
@@ -624,24 +800,26 @@ function touchAndRerender(scrollTo) {
   if (scrollTo) { const t = $(scrollTo); if (t) t.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 }
 
-function openOrder(o) {
+function openOrder(o, from) {
   current = o;
+  orderReturn = from;
+  $('#back').textContent = from === 'orders' ? '‹ Orders' : '‹ Show';
   $('#errors').hidden = true;
   renderForm();
   show('order');
 }
-function goHome() {
-  if (current && isBlank(current)) { orders = orders.filter((o) => o !== current); persist(); }
+// Leave the order form. An order that was opened and never filled in is thrown away.
+function leaveOrder() {
+  if (current && isBlank(current)) { db.orders = db.orders.filter((o) => o !== current); persist(); }
   current = null;
-  renderHome();
-  show('home');
+  if (orderReturn === 'orders') openOrders(); else openShow(currentShow);
 }
 function finishOrder() {
   // Drop empty item cards before checking.
   current.holsters = current.holsters.filter((h) => hasContent(h, HOLSTER_DEFAULTS));
   current.mags = current.mags.filter((m) => hasContent(m, MAG_DEFAULTS));
   const p = problems(current);
-  if (!p.length) { persist(); toast(current.number + ' saved'); goHome(); return; }
+  if (!p.length) { persist(); toast('Order #' + current.seq + ' saved'); leaveOrder(); return; }
   if (!current.holsters.length) current.holsters.push(newHolster());
   renderForm();
   const box = $('#errors');
@@ -656,24 +834,23 @@ function finishOrder() {
     const el = document.getElementById(p[0][0]);
     if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.focus({ preventScroll: true }); }
   };
-  $('#finish-later').onclick = () => { persist(); toast(current.number + ' saved as incomplete'); goHome(); };
+  $('#finish-later').onclick = () => { persist(); toast('Order #' + current.seq + ' saved as incomplete'); leaveOrder(); };
 }
 
 $('#new-order').onclick = () => {
-  const o = createOrder();
-  orders.push(o); persist();
-  openOrder(o);
+  const o = createOrder(currentShow);
+  db.orders.push(o); persist();
+  openOrder(o, 'show');
   setTimeout(() => $('#c-name').focus(), 50);
 };
+$('#existing-orders').onclick = openOrders;
+$('#orders-back').onclick = () => openShow(currentShow);
 $('#order-list').addEventListener('click', (e) => {
   const b = e.target.closest('[data-open]');
-  if (b) openOrder(orders.find((o) => o.id === b.dataset.open));
+  if (b) openOrder(db.orders.find((o) => o.id === b.dataset.open), 'orders');
 });
 $('#done').onclick = finishOrder;
-$('#back').onclick = goHome;
-$('#clear-sent').onclick = (e) => confirmTap(e.target, 'Tap again to remove emailed orders', () => {
-  orders = orders.filter(isUnsent); persist(); renderHome(); toast('Emailed orders removed');
-});
+$('#back').onclick = leaveOrder;
 
 // ---- Export ----
 function shipTo(c) {
@@ -715,7 +892,7 @@ const fmtLines = (L) => L.map(([k, v]) => '  ' + (k + ':').padEnd(13) + v).join(
 function orderText(o) {
   const c = o.customer;
   const out = [];
-  out.push('ORDER ' + o.number + '   ' + fmtDateTime(o.createdAt));
+  out.push('ORDER #' + o.seq + '   ' + fmtDateTime(o.createdAt));
   const missing = problems(o);
   if (missing.length) out.push('** INCOMPLETE: missing ' + missing.map(([, m]) => m).join('; ') + ' **');
   out.push('', 'CUSTOMER', fmtLines([
@@ -728,17 +905,17 @@ function orderText(o) {
   return out.join('\n');
 }
 const RULE = '\n\n' + '='.repeat(44) + '\n\n';
-function batchText(list) {
-  const head = `Buck's Holsters show orders\n${list.length} order${list.length === 1 ? '' : 's'} · sent ${fmtDateTime(Date.now())}`;
+function batchText(s, list) {
+  const head = `Buck's Holsters orders: ${s.name}\nShow dates: ${fmtRange(s.start, s.end)}\n${plural(list.length, 'order')} · emailed ${fmtDateTime(Date.now())}`;
   return head + RULE + list.map(orderText).join(RULE);
 }
 
-const CSV_COLS = ['Order #', 'Date', 'Customer', 'Phone', 'Email', 'Address', 'Ship To', 'Item', 'Hand', 'Carry', 'IWB Style', 'Other Instructions', 'Clip', 'OWB Level', 'OWB Style', 'Belt Attachment', 'QLS Drop', 'Gun', 'Light', 'Light Model', 'Material / Finish', 'Custom Print', 'Accent Ring', 'Mag Carrier Type', 'Special Instructions'];
-function csvRows(list) {
+const CSV_COLS = ['Show', 'Show Dates', 'Order #', 'Date', 'Customer', 'Phone', 'Email', 'Address', 'Ship To', 'Item', 'Hand', 'Carry', 'IWB Style', 'Other Instructions', 'Clip', 'OWB Level', 'OWB Style', 'Belt Attachment', 'QLS Drop', 'Gun', 'Light', 'Light Model', 'Material / Finish', 'Custom Print', 'Accent Ring', 'Mag Carrier Type', 'Special Instructions'];
+function csvRows(s, list) {
   const rows = [CSV_COLS];
   list.forEach((o) => {
     const c = o.customer;
-    const base = [o.number, fmtDateTime(o.createdAt), c.name, c.phone, c.email, homeAddr(c), shipTo(c)];
+    const base = [s.name, fmtRange(s.start, s.end), o.seq, fmtDateTime(o.createdAt), c.name, c.phone, c.email, homeAddr(c), shipTo(c)];
     const items = [];
     liveHolsters(o).forEach((h, i) => {
       const iwb = h.carry === 'IWB', owb = h.carry === 'OWB';
@@ -759,24 +936,26 @@ function csvRows(list) {
 
 let sendList = [];
 function renderSend() {
-  const all = $('#send-all').checked;
-  sendList = orders.filter((o) => all || isUnsent(o)).sort((a, b) => a.createdAt - b.createdAt);
+  const s = currentShow;
+  sendList = showOrders(s);
   const n = sendList.length;
   $('#send-count').textContent = n;
-  $('#send-count-label').textContent = n === 1 ? 'order to send' : 'orders to send';
+  $('#send-count-label').textContent = (n === 1 ? 'order' : 'orders') + ' from ' + s.name;
+  $('#send-sub').textContent = fmtRange(s.start, s.end);
+  $('#send-addr').textContent = ORDER_EMAIL;
   const incomplete = sendList.filter((o) => problems(o).length).length;
-  $('#send-sub').textContent = incomplete ? incomplete + ' marked incomplete' : '';
-  $('#send-addr').textContent = SUPPORT_EMAIL;
-  const text = n ? batchText(sendList) : 'No orders to send. Orders you have already emailed are hidden unless you include them above.';
+  $('#send-warn').hidden = !incomplete;
+  $('#send-warn').textContent = incomplete
+    ? `${incomplete} order${incomplete > 1 ? 's are' : ' is'} missing information. ${incomplete > 1 ? 'They are' : 'It is'} still included and flagged INCOMPLETE in the email.`
+    : '';
+  const text = n ? batchText(s, sendList) : 'No orders for this show yet.';
   $('#send-preview').textContent = text;
-  const subject = `Show orders ${fmtDate(Date.now())} (${n})`;
-  $('#mail-link').href = 'mailto:' + SUPPORT_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
-  ['#mail-link', '#share-csv', '#copy-text', '#mark-sent'].forEach((s) => $(s).toggleAttribute('aria-disabled', !n));
-  $('#mark-sent').textContent = n ? `Mark ${n} order${n > 1 ? 's' : ''} as emailed` : 'Nothing to mark';
+  const subject = `${s.name} orders, ${fmtRange(s.start, s.end)} (${n})`;
+  $('#mail-link').href = 'mailto:' + ORDER_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+  ['#mail-link', '#share-csv', '#copy-text'].forEach((sel) => $(sel).toggleAttribute('aria-disabled', !n));
 }
-$('#go-send').onclick = () => { $('#send-all').checked = false; renderSend(); show('send'); };
-$('#send-back').onclick = () => { renderHome(); show('home'); };
-$('#send-all').onchange = renderSend;
+$('#go-send').onclick = () => { renderSend(); show('send'); };
+$('#send-back').onclick = () => openShow(currentShow);
 $('#mail-link').addEventListener('click', (e) => { if (!sendList.length) e.preventDefault(); });
 
 $('#copy-text').onclick = async () => {
@@ -790,12 +969,13 @@ $('#copy-text').onclick = async () => {
 };
 $('#share-csv').onclick = async () => {
   if (!sendList.length) return;
-  const name = 'bucks-holsters-orders-' + new Date().toISOString().slice(0, 10) + '.csv';
-  const blob = new Blob([csvRows(sendList)], { type: 'text/csv' });
+  const slug = currentShow.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'show';
+  const name = `${slug}-${currentShow.start}-orders.csv`;
+  const blob = new Blob([csvRows(currentShow, sendList)], { type: 'text/csv' });
   const file = new File([blob], name, { type: 'text/csv' });
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: "Buck's Holsters orders", text: 'Send to ' + SUPPORT_EMAIL });
+      await navigator.share({ files: [file], title: currentShow.name + ' orders', text: 'Send to ' + ORDER_EMAIL });
       return;
     }
   } catch (e) { if (e.name === 'AbortError') return; }
@@ -804,14 +984,6 @@ $('#share-csv').onclick = async () => {
     document.body.appendChild(a); a.click(); a.remove();
     toast('Spreadsheet saved to Downloads');
   } catch (e) { toast('This browser cannot share files. Use Copy instead.'); }
-};
-$('#mark-sent').onclick = (e) => {
-  if (!sendList.length) return;
-  confirmTap(e.target, 'Tap again to confirm', () => {
-    const now = Date.now();
-    sendList.forEach((o) => { o.sentAt = now; if (o.updatedAt > now) o.updatedAt = now; });
-    persist(); toast(sendList.length + ' marked as emailed'); renderHome(); show('home');
-  });
 };
 
 renderHome();
