@@ -95,6 +95,13 @@ button, input, textarea, select { font: inherit; color: inherit; }
 }
 .btn-tile .big-num { color: var(--brass); }
 .center { text-align: center; margin-top: 12px; }
+.home-actions { display: grid; gap: 10px; }
+.sync-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--line); }
+.sync { font-size: 14px; color: var(--muted); font-weight: 600; }
+.sync.ok { color: var(--ok); }
+.sync.warn { color: var(--brass); }
+.pill.wait { background: transparent; color: var(--brass); border: 1px solid var(--brass); }
+.o-flags { justify-self: end; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .chip-btn {
   min-height: 46px; padding: 0 16px; border: 1.5px solid var(--line); border-radius: 10px;
   background: var(--bg); font-weight: 600; cursor: pointer;
@@ -212,14 +219,58 @@ pre.preview {
       </div>
     </header>
 
-    <button id="new-show" class="btn-hero" type="button"><span aria-hidden="true">+</span> New Show</button>
-
-    <div class="tally">
-      <h2>Shows</h2>
-      <p id="show-tally"></p>
+    <div class="show-actions">
+      <button id="new-show" class="btn-hero" type="button"><span aria-hidden="true">+</span> New Show</button>
+      <button id="prev-shows" class="btn-tile" type="button">
+        <span class="big-num" id="prev-count">0</span>
+        <span>Previous shows</span>
+      </button>
     </div>
-    <ul id="show-list" class="orders"></ul>
-    <p id="shows-empty" class="empty">No shows yet. Tap <strong>New Show</strong>, enter the show name and dates, and you're ready to take orders.</p>
+
+    <div id="current-wrap" hidden>
+      <div class="tally"><h2>Current &amp; upcoming</h2></div>
+      <ul id="show-list" class="orders"></ul>
+    </div>
+
+    <div class="sync-line">
+      <span id="sync-status" class="sync"></span>
+      <button id="go-settings" class="btn-link" type="button">Google Sheets setup</button>
+    </div>
+  </section>
+
+  <!-- PREVIOUS SHOWS -->
+  <section id="previous" hidden>
+    <div class="bar">
+      <button id="prev-back" class="btn-ghost" type="button">‹ Home</button>
+      <div class="bar-id"><strong>Previous shows</strong><span id="prev-sub"></span></div>
+      <span></span>
+    </div>
+    <p class="hint" style="margin:0 0 12px">Shows stay in the app for 90 days after their last day, then are removed automatically. Each show's Google Sheet stays in your Google Drive.</p>
+    <ul id="prev-list" class="orders"></ul>
+    <p id="prev-empty" class="empty">No previous shows yet. Shows move here the day after their last day.</p>
+  </section>
+
+  <!-- GOOGLE SHEETS SETUP -->
+  <section id="settings" hidden>
+    <div class="bar">
+      <button id="set-back" class="btn-ghost" type="button">‹ Home</button>
+      <div class="bar-id"><strong>Google Sheets</strong></div>
+      <span></span>
+    </div>
+    <form id="set-form" class="card" autocomplete="off" novalidate>
+      <p class="hint">Every show gets its own Google Sheet in your Google Drive. Orders save to it as they're entered, and every phone set up with the same link sees the same shows and orders. Without signal, orders wait on the phone and save when signal comes back.</p>
+      <div class="field">
+        <label for="set-url">Connection link</label>
+        <input type="text" id="set-url" placeholder="https://script.google.com/macros/s/.../exec" autocapitalize="none" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="set-code">Team code</label>
+        <input type="text" id="set-code" placeholder="The code set in the Google script" autocapitalize="none" spellcheck="false">
+      </div>
+      <p class="hint" id="set-result" role="status"></p>
+      <button type="submit" class="btn-primary">Save and test connection</button>
+      <button type="button" id="set-sync" class="btn">Sync now</button>
+    </form>
   </section>
 
   <!-- NEW / EDIT SHOW -->
@@ -238,15 +289,6 @@ pre.preview {
         <div class="field"><label for="sf-start" class="req">First day</label><input type="date" id="sf-start"></div>
         <div class="field"><label for="sf-end" class="req">Last day</label><input type="date" id="sf-end"></div>
       </div>
-      <fieldset class="field">
-        <legend>Quick length</legend>
-        <div class="chips" id="sf-len">
-          <button type="button" class="chip-btn" data-days="1">1 day</button>
-          <button type="button" class="chip-btn" data-days="2">2 days</button>
-          <button type="button" class="chip-btn" data-days="3">3 days</button>
-          <button type="button" class="chip-btn" data-days="4">4 days</button>
-        </div>
-      </fieldset>
       <p class="hint" id="sf-summary"></p>
       <div id="sf-error" class="errors" role="alert" hidden></div>
       <button type="submit" id="sf-save" class="btn-primary">Create show</button>
@@ -257,7 +299,7 @@ pre.preview {
   <!-- SHOW -->
   <section id="show" hidden>
     <div class="bar">
-      <button id="show-back" class="btn-ghost" type="button">‹ Shows</button>
+      <button id="show-back" class="btn-ghost" type="button">‹ Home</button>
       <div class="bar-id"><strong id="show-name"></strong><span id="show-dates"></span></div>
       <button id="show-edit" class="btn-ghost" type="button">Edit</button>
     </div>
@@ -268,8 +310,12 @@ pre.preview {
         <span>Existing orders</span>
       </button>
     </div>
-    <button id="go-send" class="btn wide" type="button">Email this show's orders</button>
+    <div class="home-actions">
+      <button id="go-send" class="btn wide" type="button">Email this show's orders</button>
+      <a id="open-sheet" class="btn wide" href="#" target="_blank" rel="noopener" hidden>Open this show's Google Sheet</a>
+    </div>
     <p class="hint center" id="show-hint"></p>
+    <p class="hint center sync" id="show-sync"></p>
   </section>
 
   <!-- EXISTING ORDERS -->
@@ -369,6 +415,8 @@ const HOLSTER_DEFAULTS = { material: 'Black' };
 const MAG_DEFAULTS = { finish: 'Match Holster' };
 
 // ---- Storage ----
+// Orders are always saved on this phone first. When Google Sheets is set up, they are also
+// copied to the show's Google Sheet (see the sync section below).
 const KEY = 'bh.data.v2';
 let storageWarned = false;
 function load(key, fallback) {
@@ -381,10 +429,13 @@ function persist() {
   }
 }
 const db = load(KEY, { shows: [], orders: [] });
+db.deletes = db.deletes || [];
+let settings = load('bh.settings', { url: '', code: '' });
 let currentShow = null;
 let current = null;
 let orderReturn = 'show';
 const showOrders = (s) => db.orders.filter((o) => o.showId === s.id).sort((a, b) => a.seq - b.seq);
+const KEEP_DAYS = 90;
 
 // ---- Helpers ----
 const $ = (s) => document.querySelector(s);
@@ -446,6 +497,7 @@ function createOrder(s) {
     seq: nextSeq(s),
     createdAt: now,
     updatedAt: now,
+    dirty: true,
     customer: { name: '', phone: '', email: '', street: '', city: '', state: '', zip: '', shipSame: true, shipStreet: '', shipCity: '', shipState: '', shipZip: '' },
     holsters: [newHolster()],
     mags: [],
@@ -484,9 +536,21 @@ function problems(o) {
 }
 
 // ---- Views ----
-function show(view) {
-  ['home', 'show-form', 'show', 'orders', 'order', 'send'].forEach((v) => { $('#' + v).hidden = v !== view; });
+const VIEWS = ['home', 'previous', 'settings', 'show-form', 'show', 'orders', 'order', 'send'];
+let view = 'home';
+function show(v) {
+  view = v;
+  VIEWS.forEach((x) => { $('#' + x).hidden = x !== v; });
   window.scrollTo(0, 0);
+}
+// Redraw whatever is on screen (after a sync brings in changes) without moving the page.
+function refreshView() {
+  if (view === 'home') renderHome();
+  else if (view === 'previous') renderPrevious();
+  else if (view === 'show' && currentShow) renderShow();
+  else if (view === 'orders' && currentShow) renderOrders();
+  else if (view === 'send' && currentShow) renderSend();
+  else if (view === 'order' && current) $('#o-num').textContent = 'Order #' + current.seq;
 }
 
 function holsterSummary(h) {
@@ -500,40 +564,70 @@ function orderSummary(o) {
   return parts.join(' · ') || 'No items yet';
 }
 const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+const today = () => dayStr(new Date());
+const isPast = (s) => s.end < today();
+const removeDate = (s) => addDays(s.end, KEEP_DAYS);
+const orderCount = (s) => Math.max(showOrders(s).length, s.remoteCount || 0);
 
-// Home: list of shows, newest first.
+function showItem(s, extra) {
+  return `<li><button type="button" data-show="${s.id}">
+    <span class="s-dates">${esc(fmtRange(s.start, s.end))}</span><span class="pill ready">${plural(orderCount(s), 'order')}</span>
+    <span class="o-name">${esc(s.name)}</span>${extra ? `<span class="o-sum">${esc(extra)}</span>` : ''}
+  </button></li>`;
+}
+
+// Home: New Show, Previous shows, and any show that is on now or coming up.
 function renderHome() {
-  const shows = [...db.shows].sort((a, b) => b.start.localeCompare(a.start) || b.createdAt - a.createdAt);
-  $('#show-list').innerHTML = shows.map((s) => {
-    const n = showOrders(s).length;
-    return `<li><button type="button" data-show="${s.id}">
-      <span class="s-dates">${esc(fmtRange(s.start, s.end))}</span><span class="pill ready">${plural(n, 'order')}</span>
-      <span class="o-name">${esc(s.name)}</span>
-    </button></li>`;
-  }).join('');
-  $('#shows-empty').hidden = shows.length > 0;
-  $('#show-tally').textContent = shows.length ? plural(shows.length, 'show') : '';
+  const upcoming = db.shows.filter((s) => !isPast(s)).sort((a, b) => a.start.localeCompare(b.start));
+  $('#show-list').innerHTML = upcoming.map((s) => showItem(s)).join('');
+  $('#current-wrap').hidden = !upcoming.length;
+  $('#prev-count').textContent = db.shows.filter(isPast).length;
+  updateSyncStatus();
 }
 function goHome() {
   current = null; currentShow = null;
   renderHome();
   show('home');
+  sync();
 }
 $('#new-show').onclick = () => openShowForm(null);
-$('#show-list').addEventListener('click', (e) => {
+$('#prev-shows').onclick = () => { renderPrevious(); show('previous'); sync(); };
+$('#prev-back').onclick = goHome;
+document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-show]');
   if (b) openShow(db.shows.find((s) => s.id === b.dataset.show));
 });
+
+function renderPrevious() {
+  const past = db.shows.filter(isPast).sort((a, b) => b.end.localeCompare(a.end));
+  $('#prev-list').innerHTML = past.map((s) =>
+    showItem(s, 'Removed from the app on ' + parseDay(removeDate(s)).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))
+  ).join('');
+  $('#prev-empty').hidden = past.length > 0;
+  $('#prev-sub').textContent = past.length ? plural(past.length, 'show') : '';
+}
+
+// Shows whose last day was more than 90 days ago are removed from the app.
+// A show is only removed once everything in it has reached Google Sheets (or Sheets isn't set up).
+function removeOldShows() {
+  const old = db.shows.filter((s) => removeDate(s) < today());
+  old.forEach((s) => {
+    const unsaved = sheetsOn() && (!s.synced || showOrders(s).some((o) => o.dirty && !isBlank(o)));
+    if (unsaved) return;
+    db.orders = db.orders.filter((o) => o.showId !== s.id);
+    db.shows = db.shows.filter((x) => x !== s);
+  });
+  if (old.length) persist();
+}
 
 // New / edit show.
 let editingShow = null;
 function openShowForm(s) {
   editingShow = s;
-  const today = dayStr(new Date());
   $('#sf-title').textContent = s ? 'Edit show' : 'New show';
   $('#sf-name').value = s ? s.name : '';
-  $('#sf-start').value = s ? s.start : today;
-  $('#sf-end').value = s ? s.end : addDays(today, 1);
+  $('#sf-start').value = s ? s.start : today();
+  $('#sf-end').value = s ? s.end : addDays(today(), 1);
   $('#sf-save').textContent = s ? 'Save changes' : 'Create show';
   $('#sf-delete').hidden = !s;
   $('#sf-error').hidden = true;
@@ -544,9 +638,7 @@ function openShowForm(s) {
 function updateShowSummary() {
   const a = $('#sf-start').value, b = $('#sf-end').value;
   const ok = a && b && b >= a;
-  const n = ok ? dayCount(a, b) : 0;
-  $('#sf-summary').textContent = ok ? `${plural(n, 'day')}: ${fmtRange(a, b)}` : '';
-  document.querySelectorAll('#sf-len [data-days]').forEach((btn) => btn.classList.toggle('on', +btn.dataset.days === n));
+  $('#sf-summary').textContent = ok ? `${plural(dayCount(a, b), 'day')}: ${fmtRange(a, b)}` : '';
 }
 $('#sf-start').addEventListener('change', () => {
   const a = $('#sf-start').value, b = $('#sf-end').value;
@@ -554,14 +646,6 @@ $('#sf-start').addEventListener('change', () => {
   updateShowSummary();
 });
 $('#sf-end').addEventListener('change', updateShowSummary);
-$('#sf-len').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-days]');
-  if (!b) return;
-  const a = $('#sf-start').value || dayStr(new Date());
-  $('#sf-start').value = a;
-  $('#sf-end').value = addDays(a, +b.dataset.days - 1);
-  updateShowSummary();
-});
 $('#sf').addEventListener('submit', (e) => {
   e.preventDefault();
   const name = $('#sf-name').value.trim(), a = $('#sf-start').value, b = $('#sf-end').value;
@@ -574,52 +658,209 @@ $('#sf').addEventListener('submit', (e) => {
     $('#sf-error').hidden = false;
     return;
   }
-  if (editingShow) Object.assign(editingShow, { name, start: a, end: b });
-  else { editingShow = { id: uid(), name, start: a, end: b, createdAt: Date.now() }; db.shows.push(editingShow); }
+  if (editingShow) Object.assign(editingShow, { name, start: a, end: b, dirty: true });
+  else { editingShow = { id: uid(), name, start: a, end: b, createdAt: Date.now(), dirty: true }; db.shows.push(editingShow); }
   persist();
   toast(name + ' saved');
   openShow(editingShow);
 });
 $('#sf-back').onclick = () => (editingShow ? openShow(editingShow) : goHome());
 $('#sf-delete').onclick = (e) => {
-  const n = showOrders(editingShow).length;
-  confirmTap(e.target, n ? `Tap again to delete the show and its ${plural(n, 'order')}` : 'Tap again to delete the show', () => {
+  const n = orderCount(editingShow);
+  confirmTap(e.target, n ? `Tap again to remove the show and its ${plural(n, 'order')}` : 'Tap again to remove the show', () => {
+    if (editingShow.synced) db.deletes.push({ kind: 'show', id: editingShow.id });
     db.orders = db.orders.filter((o) => o.showId !== editingShow.id);
     db.shows = db.shows.filter((s) => s !== editingShow);
-    persist(); toast('Show deleted'); goHome();
+    persist();
+    toast(editingShow.synced ? 'Show removed. Its Google Sheet stays in Drive.' : 'Show removed');
+    goHome();
   });
 };
 
 // Show page: New Order / Existing orders / Email.
 function openShow(s) {
   currentShow = s; current = null;
+  renderShow();
+  show('show');
+  sync();
+}
+function renderShow() {
+  const s = currentShow;
   $('#show-name').textContent = s.name;
   $('#show-dates').textContent = fmtRange(s.start, s.end) + ' · ' + plural(dayCount(s.start, s.end), 'day');
   const list = showOrders(s);
-  $('#show-count').textContent = list.length;
+  $('#show-count').textContent = orderCount(s);
   const inc = list.filter((o) => problems(o).length).length;
   $('#show-hint').textContent = !list.length ? 'Orders for this show are numbered starting at #1.'
     : inc ? `${plural(inc, 'order')} still ${inc === 1 ? 'needs' : 'need'} info.` : 'All orders are complete.';
-  show('show');
+  $('#open-sheet').hidden = !s.sheetUrl;
+  if (s.sheetUrl) $('#open-sheet').href = s.sheetUrl;
+  const waiting = list.filter((o) => o.dirty && !isBlank(o)).length;
+  $('#show-sync').textContent = !sheetsOn() ? '' : waiting ? `${plural(waiting, 'order')} waiting to save to Google Sheets` : s.synced ? 'Saved to Google Sheets' : 'Waiting to create the Google Sheet';
+  $('#show-sync').className = 'hint center sync ' + (waiting || !s.synced ? 'warn' : 'ok');
 }
 $('#show-back').onclick = goHome;
 $('#show-edit').onclick = () => openShowForm(currentShow);
 
 // Existing orders for the current show only.
 function openOrders() {
+  renderOrders();
+  show('orders');
+  sync();
+}
+function renderOrders() {
   const list = showOrders(currentShow).reverse();
   $('#orders-sub').textContent = currentShow.name + ' · ' + plural(list.length, 'order');
   $('#order-list').innerHTML = list.map((o) => {
-    const pill = problems(o).length ? '<span class="pill todo">Needs info</span>' : '<span class="pill ready">Ready</span>';
+    let pills = problems(o).length ? '<span class="pill todo">Needs info</span>' : '<span class="pill ready">Ready</span>';
+    if (sheetsOn() && o.dirty) pills = '<span class="pill wait">Not saved online</span>' + pills;
     return `<li><button type="button" data-open="${o.id}">
-      <span class="o-num"><strong>#${o.seq}</strong> · ${esc(fmtDayTime(o.createdAt))}</span>${pill}
+      <span class="o-num"><strong>#${o.seq}</strong> · ${esc(fmtDayTime(o.createdAt))}</span><span class="o-flags">${pills}</span>
       <span class="o-name">${esc(o.customer.name || 'No name yet')}</span>
       <span class="o-sum">${esc(orderSummary(o))}</span>
     </button></li>`;
   }).join('');
   $('#empty').hidden = list.length > 0;
-  show('orders');
 }
+
+// ---- Google Sheets sync ----
+// The connection link points at the Google Apps Script in google-apps-script/Code.gs, which
+// keeps one Google Sheet per show. Everything is saved on the phone first and sent when there's signal.
+const sheetsOn = () => !!settings.url;
+let syncing = false, syncAgain = false, syncError = '', syncTimer = null;
+async function api(action, data) {
+  const res = await fetch(settings.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, key: settings.code, ...data }),
+  });
+  let j;
+  try { j = await res.json(); } catch (e) { throw new Error('Google Sheets sent back an unexpected reply. Check the connection link.'); }
+  if (!j.ok) throw new Error(j.error || 'Google Sheets error');
+  return j;
+}
+const pendingCount = () =>
+  db.deletes.length + db.shows.filter((s) => s.dirty || !s.synced).length + db.orders.filter((o) => o.dirty && !isBlank(o)).length;
+function scheduleSync(ms = 4000) { clearTimeout(syncTimer); syncTimer = setTimeout(sync, ms); }
+function wireOrder(o) { const { dirty, synced, ...rest } = o; return rest; }
+function sheetRow(o) {
+  const c = o.customer, p = problems(o);
+  return {
+    seq: o.seq, created: fmtDateTime(o.createdAt), updated: fmtDateTime(o.updatedAt),
+    name: c.name, phone: c.phone, email: c.email, address: homeAddr(c), shipTo: shipTo(c),
+    holsters: liveHolsters(o).map((h, i) => `Holster ${i + 1}: ` + holsterLines(h).map(([k, v]) => k + ': ' + v).join('; ')).join('\n'),
+    mags: liveMags(o).map((m, i) => `Mag carrier ${i + 1}: ` + magLines(m).map(([k, v]) => k + ': ' + v).join('; ')).join('\n'),
+    notes: o.notes, status: p.length ? 'Needs info: ' + p.map(([, m]) => m).join('; ') : 'Complete',
+  };
+}
+async function sync() {
+  if (!sheetsOn()) { updateSyncStatus(); return; }
+  if (syncing) { syncAgain = true; return; }
+  if (navigator.onLine === false) { updateSyncStatus(); return; }
+  syncing = true; updateSyncStatus();
+  try {
+    while (db.deletes.length) {
+      const d = db.deletes[0];
+      await api(d.kind === 'show' ? 'deleteShow' : 'deleteOrder', d);
+      db.deletes.shift(); persist();
+    }
+    for (const s of db.shows.filter((x) => x.dirty || !x.synced)) {
+      const r = await api('saveShow', { show: { id: s.id, name: s.name, start: s.start, end: s.end, createdAt: s.createdAt } });
+      s.synced = true; s.dirty = false; s.sheetUrl = r.sheetUrl; persist();
+    }
+    for (const o of db.orders.filter((x) => x.dirty && !isBlank(x))) {
+      if (!db.shows.some((s) => s.id === o.showId && s.synced)) continue;
+      const stamp = o.updatedAt;
+      const r = await api('saveOrder', { showId: o.showId, order: wireOrder(o), row: sheetRow(o) });
+      if (r.seq !== o.seq) {
+        toast(`Order #${o.seq} is now #${r.seq}. Another phone already used #${o.seq}.`);
+        o.seq = r.seq;
+      }
+      o.synced = true;
+      if (o.updatedAt === stamp) o.dirty = false;
+      persist();
+    }
+    mergeShows((await api('listShows', {})).shows);
+    if (currentShow && db.shows.includes(currentShow)) mergeOrders(currentShow, (await api('getOrders', { showId: currentShow.id })).orders);
+    syncError = '';
+  } catch (e) {
+    syncError = e.message === 'Failed to fetch' || e.name === 'TypeError' ? 'No connection' : (e.message || String(e));
+  } finally {
+    syncing = false; persist(); updateSyncStatus(); refreshView();
+    if (syncAgain) { syncAgain = false; scheduleSync(500); }
+  }
+}
+function mergeShows(remote) {
+  const ids = new Set(remote.map((r) => r.id));
+  remote.forEach((r) => {
+    if (removeDate(r) < today() || db.deletes.some((d) => d.kind === 'show' && d.id === r.id)) return;
+    const s = db.shows.find((x) => x.id === r.id);
+    if (!s) db.shows.push({ ...r, remoteCount: r.count, synced: true, dirty: false });
+    else {
+      if (!s.dirty) Object.assign(s, { name: r.name, start: r.start, end: r.end });
+      Object.assign(s, { sheetUrl: r.sheetUrl, remoteCount: r.count, synced: true });
+    }
+  });
+  // Shows removed on another phone.
+  db.shows.filter((s) => s.synced && !s.dirty && !ids.has(s.id) && s !== currentShow).forEach((s) => {
+    if (showOrders(s).some((o) => o.dirty)) return;
+    db.orders = db.orders.filter((o) => o.showId !== s.id);
+    db.shows = db.shows.filter((x) => x !== s);
+  });
+}
+function mergeOrders(s, remote) {
+  const ids = new Set(remote.map((r) => r.id));
+  remote.forEach((r) => {
+    if (db.deletes.some((d) => d.kind === 'order' && d.id === r.id)) return;
+    const o = db.orders.find((x) => x.id === r.id);
+    if (!o) db.orders.push({ ...r, showId: s.id, synced: true, dirty: false });
+    else if (!o.dirty && o !== current) Object.assign(o, r, { synced: true, dirty: false });
+  });
+  // Orders deleted on another phone.
+  db.orders = db.orders.filter((o) => o.showId !== s.id || !o.synced || o.dirty || o === current || ids.has(o.id));
+  s.remoteCount = remote.length;
+}
+function updateSyncStatus() {
+  const el = $('#sync-status');
+  const n = pendingCount();
+  let text, cls;
+  if (!sheetsOn()) { text = 'Saved on this phone only. Set up Google Sheets to back up orders.'; cls = 'warn'; }
+  else if (syncing) { text = 'Saving to Google Sheets…'; cls = ''; }
+  else if (n && (navigator.onLine === false || syncError === 'No connection')) { text = `${plural(n, 'change')} waiting for signal`; cls = 'warn'; }
+  else if (syncError) { text = 'Google Sheets problem: ' + syncError; cls = 'warn'; }
+  else if (n) { text = `${plural(n, 'change')} waiting to save`; cls = 'warn'; }
+  else { text = 'Everything is saved to Google Sheets'; cls = 'ok'; }
+  el.textContent = text; el.className = 'sync ' + cls;
+}
+window.addEventListener('online', () => sync());
+setInterval(() => { if (pendingCount() || view === 'orders' || view === 'show') sync(); }, 60000);
+
+// Settings screen.
+$('#go-settings').onclick = () => {
+  $('#set-url').value = settings.url; $('#set-code').value = settings.code;
+  $('#set-result').textContent = sheetsOn() ? ($('#sync-status').textContent) : 'Not set up yet. See the setup guide for the link and team code.';
+  show('settings');
+};
+$('#set-back').onclick = goHome;
+$('#set-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const url = $('#set-url').value.trim(), code = $('#set-code').value.trim();
+  if (url && !/^https:\/\/script\.google\.com\//.test(url)) { $('#set-result').textContent = 'That link should start with https://script.google.com/'; return; }
+  const changed = url !== settings.url;
+  settings = { url, code };
+  try { localStorage.setItem('bh.settings', JSON.stringify(settings)); } catch (err) {}
+  if (!url) { $('#set-result').textContent = 'Google Sheets turned off. Orders save on this phone only.'; updateSyncStatus(); return; }
+  if (changed) {
+    // New connection: send everything on this phone to it.
+    db.shows.forEach((s) => { s.synced = false; s.sheetUrl = ''; });
+    db.orders.forEach((o) => { o.dirty = true; o.synced = false; });
+    persist();
+  }
+  $('#set-result').textContent = 'Testing…';
+  try { await api('ping', {}); $('#set-result').textContent = 'Connected. Saving orders to Google Sheets…'; await sync(); $('#set-result').textContent = $('#sync-status').textContent; }
+  catch (err) { $('#set-result').textContent = 'Could not connect: ' + (err.message || err); }
+});
+$('#set-sync').onclick = async () => { $('#set-result').textContent = 'Syncing…'; await sync(); $('#set-result').textContent = $('#sync-status').textContent; };
 
 // ---- Form building ----
 function chips(prefix, field, options, value, cls = '') {
@@ -750,8 +991,9 @@ function setField(el, value) {
   const scope = el.closest('[data-scope]');
   scopeObj(scope)[el.dataset.field] = value;
   applyVisibility(scope);
-  current.updatedAt = Date.now();
+  current.updatedAt = Date.now(); current.dirty = true;
   persist();
+  scheduleSync();
   const bad = el.closest('.bad'); if (bad) bad.classList.remove('bad');
 }
 
@@ -790,13 +1032,14 @@ form.addEventListener('click', (e) => {
     });
   } else if (el.id === 'delete-order') {
     confirmTap(el, 'Tap again to delete Order #' + current.seq, () => {
+      if (current.synced) db.deletes.push({ kind: 'order', showId: current.showId, id: current.id });
       db.orders = db.orders.filter((o) => o !== current); current = null; persist();
       toast('Order deleted'); leaveOrder();
     });
   }
 });
 function touchAndRerender(scrollTo) {
-  current.updatedAt = Date.now(); persist(); renderForm();
+  current.updatedAt = Date.now(); current.dirty = true; persist(); renderForm(); scheduleSync();
   if (scrollTo) { const t = $(scrollTo); if (t) t.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 }
 
@@ -810,7 +1053,10 @@ function openOrder(o, from) {
 }
 // Leave the order form. An order that was opened and never filled in is thrown away.
 function leaveOrder() {
-  if (current && isBlank(current)) { db.orders = db.orders.filter((o) => o !== current); persist(); }
+  if (current && isBlank(current)) {
+    if (current.synced) db.deletes.push({ kind: 'order', showId: current.showId, id: current.id });
+    db.orders = db.orders.filter((o) => o !== current); persist();
+  }
   current = null;
   if (orderReturn === 'orders') openOrders(); else openShow(currentShow);
 }
@@ -986,7 +1232,9 @@ $('#share-csv').onclick = async () => {
   } catch (e) { toast('This browser cannot share files. Use Copy instead.'); }
 };
 
+removeOldShows();
 renderHome();
+sync();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
