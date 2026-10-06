@@ -401,10 +401,10 @@ const CARRY = [['IWB', 'Inside waistband (IWB)'], ['OWB', 'Outside waistband (OW
 const IWB_STYLES = ['Lil Buck', 'Mini Buck', 'Sidecar', 'Modular Sidecar', 'Protucker', 'Single Clip Hybrid', 'Other'];
 const NO_CLAW = 'Protucker'; // IWB style without the Concealment Claw choice
 const IWB_CLIPS = ['1.5" Fomi', '1.75" Fomi', 'Hart Clip', 'DCC Monoblock', 'Double Grip Hook', 'Ulti-Clip'];
-const SIDECAR_CLIPS = ['DCC Metal Clip', 'Plastic Grip Hook'];
-const MAG_CLIPS = IWB_CLIPS.filter((c) => c !== 'Double Grip Hook'); // a grip hook doesn't work on a mag carrier
+const SIDECAR_CLIPS = ['DCC Metal Clip', 'Plastic Grip Hook', 'Ulti-Clip Slim'];
+const NO_GRIP_HOOK = IWB_CLIPS.filter((c) => c !== 'Double Grip Hook');
 // Belt attachment choices for each IWB style. Styles listed with [] have no belt attachment.
-const CLIPS_BY_STYLE = { 'Sidecar': SIDECAR_CLIPS, 'Mini Buck': [], 'Protucker': [] };
+const CLIPS_BY_STYLE = { 'Sidecar': SIDECAR_CLIPS, 'Modular Sidecar': NO_GRIP_HOOK, 'Mini Buck': [], 'Protucker': [] };
 const clipOptions = (style) => CLIPS_BY_STYLE[style] || IWB_CLIPS;
 // The saved belt attachment only counts if it is one of the current style's choices.
 const beltAttachment = (h) => (clipOptions(h.iwbStyle).includes(h.clip) ? h.clip : '');
@@ -412,6 +412,13 @@ const YES_NO = ['Yes', 'No'];
 const OWB_LEVELS = ['Level 1', 'Level 2'];
 const OWB_STYLES = ['Taco', 'Pancake', 'QLS'];
 const TACO_ATTACH = ['Belt Slide', 'Combat Loop', 'Paddle', 'Velcro'];
+// Mag carrier belt attachments for each category (a grip hook doesn't work on a mag carrier).
+const MAG_CLIPS_BY_CAT = {
+  'Individual Mag Carrier': [...NO_GRIP_HOOK, 'Velcro'],
+  'Double Mag Carrier': TACO_ATTACH,
+  'Double Double': NO_GRIP_HOOK,
+  'Rifle Mag Carrier': TACO_ATTACH,
+};
 const QLS_DROP = ['Mid-Drop', 'Low-Drop'];
 const LIGHT = ['No light', 'With light'];
 const MATERIALS = ['Black', 'Solid Color', 'Carbon Fiber', 'Custom Print'];
@@ -461,14 +468,16 @@ const PRICE = {
   // Belt attachment added cost. Anything not listed is included in the price.
   clip: { 'DCC Monoblock': 4.99, 'Double Grip Hook': 9.99, 'Ulti-Clip': 13.99 },
   clipByStyle: {
-    'Sidecar': { 'DCC Metal Clip': 29.99 },
-    'Modular Sidecar': { 'DCC Monoblock': 9.99, 'Ulti-Clip': 26.98 },
+    'Sidecar': { 'DCC Metal Clip': 29.99, 'Ulti-Clip Slim': 32.99 },
+    'Modular Sidecar': { 'DCC Monoblock': 9.99, 'Ulti-Clip': 26.99 },
   },
   taco: { 'Velcro': 4.99 },
-  // Mag carrier belt attachments (only these categories have them).
+  // Mag carrier belt attachment added cost, by category.
   magClip: {
-    'Individual Mag Carrier': { 'DCC Monoblock': 4.99, 'Ulti-Clip': 13.99 },
+    'Individual Mag Carrier': { 'DCC Monoblock': 4.99, 'Ulti-Clip': 13.99, 'Velcro': 4.99 },
+    'Double Mag Carrier': { 'Velcro': 4.99 },
     'Double Double': { 'DCC Monoblock': 9.99, 'Ulti-Clip': 27.99 },
+    'Rifle Mag Carrier': { 'Velcro': 4.99 },
   },
   mag: { 'Individual Mag Carrier': 24.99, 'Double Mag Carrier': 49.99, 'Double Double': 54.99, 'Rifle Mag Carrier': 39.99 },
   shipping: 5.00, // added once to every order
@@ -478,8 +487,8 @@ const UNPRICED_IWB = IWB_STYLES.filter((st) => !(st in PRICE.iwb));
 const money = (n) => '$' + n.toFixed(2);
 const parsePrice = (v) => { const n = parseFloat(String(v ?? '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
 const clipPrice = (style, clip) => (PRICE.clipByStyle[style] || {})[clip] ?? PRICE.clip[clip] ?? 0;
-const MAG_CLIP_CATS = Object.keys(PRICE.magClip);
-const magClip = (m) => (MAG_CLIP_CATS.includes(m.magCat) && MAG_CLIPS.includes(m.clip) ? m.clip : '');
+const MAG_CLIP_CATS = Object.keys(MAG_CLIPS_BY_CAT);
+const magClip = (m) => ((MAG_CLIPS_BY_CAT[m.magCat] || []).includes(m.clip) ? m.clip : '');
 const magClipPrice = (cat, clip) => (PRICE.magClip[cat] || {})[clip] || 0;
 // Chip options with the added cost on the button.
 const pricedOptions = (list, priceOf) => list.map((c) => [c, c, priceOf(c) ? '+' + money(priceOf(c)) : '']);
@@ -1111,7 +1120,7 @@ function magCard(m, i) {
       <button type="button" class="btn-link danger" data-remove="mag" data-index="${i}">Remove</button></div>
     ${group('Carrier type', chips(p, 'magCat', MAG_CATEGORIES.map(([c]) => [c, c, money(PRICE.mag[c])]), m.magCat, 'big'), true)}
     ${MAG_CATEGORIES.map(([cat], ci) => `<div class="sub" data-if="magCat=${esc(cat)}">${group(esc(cat), magTypeChips(p, ci, m.type), true)}${
-      MAG_CLIP_CATS.includes(cat) ? group('Belt attachment', chips(p + 'c' + ci, 'clip', pricedOptions(MAG_CLIPS, (c) => magClipPrice(cat, c)), m.clip)) : ''}</div>`).join('')}
+      MAG_CLIP_CATS.includes(cat) ? group('Belt attachment', chips(p + 'c' + ci, 'clip', pricedOptions(MAG_CLIPS_BY_CAT[cat], (c) => magClipPrice(cat, c)), m.clip)) : ''}</div>`).join('')}
     ${group('Material / print', chips(p, 'finish', finishOptions(MAG_FINISH), m.finish))}
     <div data-if="finish=Solid Color">${input(p + '-solidColor', 'solidColor', 'Solid color', m.solidColor, { placeholder: 'e.g. OD Green, Tan, Red', req: true })}</div>
     <div data-if="finish=Carbon Fiber">${input(p + '-cfColor', 'cfColor', 'Carbon fiber color', m.cfColor, { placeholder: 'e.g. Black, Red, Blue', req: true })}</div>
