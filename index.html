@@ -17,12 +17,12 @@
 /* Layout: one-column bench sheet. Sticky order bar on top, stacked section cards, every choice a big tap chip.
    Colors: Buck's Holsters black and orange, one dark look on every phone. Change --accent to adjust the orange. */
 :root {
-  --bg: #0e0e0e;
+  --bg: #080808;
   --surface: #1a1a1a;
   --ink: #f4f2ef;
   --muted: #a8a29c;
   --line: #34312e;
-  --accent: #f26b1d;
+  --accent: #f25603; /* sampled from the Buck's Holsters logo */
   --accent-ink: #111111;
   --accent-soft: #3a2415;
   --brass: #ff9a52;
@@ -59,6 +59,21 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .wide { width: 100%; }
 
 /* Home */
+/* Logo banner: bleeds to the screen edges; the pattern fades out on every side, the logo itself stays crisp. */
+.hero-logo { position: relative; margin: 0 -16px 10px; overflow: hidden; text-align: center; }
+.hero-logo img {
+  display: block; width: 100%; max-width: 900px; height: auto; margin: 0 auto;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 13%, #000 87%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 74%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 13%, #000 87%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 74%, transparent);
+  mask-composite: intersect;
+}
+.hero-logo p {
+  position: relative; margin: -14px 0 0; color: var(--muted); font-size: 13px; letter-spacing: .22em;
+  text-transform: uppercase; font-weight: 700;
+}
+/* On phones, enlarge the banner a little so the logo fills the width; only pattern is cropped. */
+@media (max-width: 600px) { .hero-logo img { width: 112%; margin-left: -6%; } }
 .brand { display: flex; align-items: center; gap: 14px; padding: 24px 0 18px; }
 .mark {
   width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; flex: none;
@@ -211,12 +226,9 @@ pre.preview {
 
   <!-- HOME -->
   <section id="home">
-    <header class="brand">
-      <div class="mark" aria-hidden="true">BH</div>
-      <div>
-        <h1>Buck's Holsters</h1>
-        <p>Show order book</p>
-      </div>
+    <header class="hero-logo">
+      <img src="logo-banner.webp" alt="Buck's Holsters" width="1280" height="568" decoding="async">
+      <p>Show order book</p>
     </header>
 
     <div class="show-actions">
