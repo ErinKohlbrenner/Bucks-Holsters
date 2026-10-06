@@ -145,9 +145,6 @@ input[type=text], input[type=email], input[type=tel], input[type=date], textarea
 }
 textarea { min-height: 84px; resize: vertical; line-height: 1.4; }
 input:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
-.mag-cat { display: grid; gap: 8px; }
-.mag-cat + .mag-cat { margin-top: 10px; }
-.mag-cat > .lbl { color: var(--brass); }
 .sub { display: grid; gap: 16px; padding-left: 14px; border-left: 3px solid var(--accent-soft); }
 .req::after { content: ' required'; text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--brass); }
 
@@ -162,7 +159,7 @@ input:focus, textarea:focus { border-color: var(--accent); outline: none; box-sh
 .chip input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .chip input:focus-visible + span { outline: 3px solid var(--brass); outline-offset: 2px; }
 .chips.big .chip { flex: 1 1 140px; }
-.chips.big .chip span { width: 100%; justify-content: center; min-height: 56px; font-size: 18px; }
+.chips.big .chip span { width: 100%; justify-content: center; text-align: center; min-height: 56px; padding-block: 6px; font-size: 18px; line-height: 1.2; }
 .chip i { width: 18px; height: 18px; border-radius: 50%; background: var(--sw); box-shadow: 0 0 0 1.5px var(--line); flex: none; }
 .chip input:checked + span i { box-shadow: 0 0 0 2px var(--accent-ink); }
 .check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 600; cursor: pointer; }
@@ -405,13 +402,26 @@ const TACO_ATTACH = ['Belt Slide', 'Combat Loop', 'Paddle', 'Velcro'];
 const QLS_DROP = ['Mid-Drop', 'Low-Drop'];
 const LIGHT = ['No light', 'With light'];
 const MATERIALS = ['Black', 'Black Carbon Fiber', 'Custom Print'];
-// Mag carrier types in categories. The saved value includes the category, e.g. "Double Double: Single Stack Mag".
+// Mag carriers: pick a category first, then a type in it.
+// The saved type includes the category, e.g. "Double Double: Single Stack Mag".
 const MAG_CATEGORIES = [
   ['Individual Mag Carrier', ['Single Stack', 'Double Stack', '10/45 Double Stack']],
   ['Double Mag Carrier', ['Single Stack Double Mag', 'Double Stack Double Mag', '10/45 Double Mag']],
-  ['Double Double', ['Single Stack Mag', 'Double Stack Mag']],
-  ['Rifle Mag Carrier', ['AR Mag', 'Scorpion Mag']],
+  ['Double Double', ['Single Stack Mag', 'Double Stack Mag', '10/45 Mag']],
+  ['AR Mag Carrier', ['AR Mag', 'Scorpion Mag']],
 ];
+const RENAMED_MAG_CATEGORIES = { 'Rifle Mag Carrier': 'AR Mag Carrier' };
+// The saved type only counts if it belongs to the chosen category.
+const magType = (m) => (m.magCat && (m.type || '').startsWith(m.magCat + ': ') ? m.type : '');
+// Orders saved before categories were picked separately: fill in the category from the type.
+function upgradeMag(m) {
+  if (!m.type || m.magCat) return;
+  const i = m.type.indexOf(': ');
+  if (i < 0) return;
+  let cat = m.type.slice(0, i);
+  if (RENAMED_MAG_CATEGORIES[cat]) { cat = RENAMED_MAG_CATEGORIES[cat]; m.type = cat + m.type.slice(i); }
+  if (MAG_CATEGORIES.some(([c]) => c === cat)) m.magCat = cat;
+}
 const MAG_FINISH = ['Match Holster', 'Black', 'Custom Print'];
 
 const HOLSTER_DEFAULTS = { material: 'Black' };
@@ -532,7 +542,10 @@ function problems(o) {
   o.mags.forEach((m, i) => {
     if (!hasContent(m, MAG_DEFAULTS)) return;
     const n = 'Mag carrier ' + (i + 1) + ': ', q = 'm' + i;
-    if (!m.type) p.push([q + '-type', n + 'carrier type']);
+    upgradeMag(m);
+    const ci = MAG_CATEGORIES.findIndex(([c]) => c === m.magCat);
+    if (ci < 0) p.push([q + '-magCat', n + 'carrier type']);
+    else if (!magType(m)) p.push([q + '-type' + ci, n + 'which ' + m.magCat]);
     if (m.finish === 'Custom Print' && !(m.print || '').trim()) p.push([q + '-print', n + 'custom print description']);
   });
   return p;
@@ -877,14 +890,13 @@ function ringChips(prefix, field, value) {
     `<label class="chip"><input type="radio" id="${prefix}-${field}-${k}" name="${prefix}-${field}" data-field="${field}" value="${esc(name)}"${value === name ? ' checked' : ''}><span><i style="--sw:${hex}"></i>${esc(name)}</span></label>`
   ).join('') + '</div>';
 }
-function magTypeChips(prefix, value) {
-  let k = 0;
-  return `<div id="${prefix}-type">` + MAG_CATEGORIES.map(([cat, types]) =>
-    `<div class="mag-cat"><span class="lbl">${esc(cat)}</span><div class="chips">` + types.map((t) => {
-      const val = cat + ': ' + t;
-      return `<label class="chip"><input type="radio" id="${prefix}-type-${k++}" name="${prefix}-type" data-field="type" value="${esc(val)}"${value === val ? ' checked' : ''}><span>${esc(t)}</span></label>`;
-    }).join('') + '</div></div>'
-  ).join('') + '</div>';
+// Type choices for one mag carrier category, shown once that category is picked.
+function magTypeChips(prefix, ci, value) {
+  const [cat, types] = MAG_CATEGORIES[ci];
+  return `<div class="chips" id="${prefix}-type${ci}">` + types.map((t, k) => {
+    const val = cat + ': ' + t;
+    return `<label class="chip"><input type="radio" id="${prefix}-type${ci}-${k}" name="${prefix}-type" data-field="type" value="${esc(val)}"${value === val ? ' checked' : ''}><span>${esc(t)}</span></label>`;
+  }).join('') + '</div>';
 }
 const group = (label, inner, req) => `<fieldset class="field"><legend${req ? ' class="req"' : ''}>${label}</legend>${inner}</fieldset>`;
 function input(id, field, label, value, opts = {}) {
@@ -957,10 +969,12 @@ function holsterCard(h, i) {
 
 function magCard(m, i) {
   const p = 'm' + i;
+  upgradeMag(m);
   return `<section class="card" data-scope="mag" data-index="${i}">
     <div class="card-head"><h2><span class="kind">Mag carrier</span> ${i + 1}</h2>
       <button type="button" class="btn-link danger" data-remove="mag" data-index="${i}">Remove</button></div>
-    ${group('Carrier type', magTypeChips(p, m.type), true)}
+    ${group('Carrier type', chips(p, 'magCat', MAG_CATEGORIES.map(([c]) => c), m.magCat, 'big'), true)}
+    ${MAG_CATEGORIES.map(([cat], ci) => `<div class="sub" data-if="magCat=${esc(cat)}">${group(esc(cat), magTypeChips(p, ci, m.type), true)}</div>`).join('')}
     ${group('Finish', chips(p, 'finish', MAG_FINISH, m.finish))}
     <div data-if="finish=Custom Print">${area(p + '-print', 'print', 'Custom print', m.print, 'Describe the print', true)}</div>
     ${group('Accent ring color', ringChips(p, 'ring', m.ring))}
@@ -1102,7 +1116,8 @@ $('#new-order').onclick = () => {
   const o = createOrder(currentShow);
   db.orders.push(o); persist();
   openOrder(o, 'show');
-  setTimeout(() => $('#c-name').focus(), 50);
+  // Start in the Name box, unless someone already tapped into another box.
+  setTimeout(() => { if (!document.activeElement.matches('input, textarea')) $('#c-name').focus(); }, 50);
 };
 $('#existing-orders').onclick = openOrders;
 $('#orders-back').onclick = () => openShow(currentShow);
@@ -1145,7 +1160,7 @@ function holsterLines(h) {
 }
 function magLines(m) {
   return [
-    ['Type', m.type || '—'],
+    ['Type', magType(m) || (m.magCat ? m.magCat + ' (type not chosen)' : m.type || '—')],
     ['Finish', m.finish === 'Custom Print' ? 'Custom print: ' + (m.print || '(not described)') : m.finish || '—'],
     ['Accent ring', m.ring || 'None'],
   ];
@@ -1188,7 +1203,7 @@ function csvRows(s, list) {
     });
     liveMags(o).forEach((m, i) => {
       items.push(['Mag carrier ' + (i + 1), '', '', '', '', '', '', '', '', '', '', '', '', '',
-        m.finish, m.finish === 'Custom Print' ? m.print : '', m.ring, m.type]);
+        m.finish, m.finish === 'Custom Print' ? m.print : '', m.ring, magType(m) || m.magCat || m.type || '']);
     });
     if (!items.length) items.push(Array(18).fill(''));
     items.forEach((it) => rows.push([...base, ...it, o.notes]));
