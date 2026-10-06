@@ -145,7 +145,9 @@ input[type=text], input[type=email], input[type=tel], input[type=date], textarea
 }
 textarea { min-height: 84px; resize: vertical; line-height: 1.4; }
 input:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
-.sub-flat { display: grid; gap: 16px; }
+.mag-cat { display: grid; gap: 8px; }
+.mag-cat + .mag-cat { margin-top: 10px; }
+.mag-cat > .lbl { color: var(--brass); }
 .sub { display: grid; gap: 16px; padding-left: 14px; border-left: 3px solid var(--accent-soft); }
 .req::after { content: ' required'; text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--brass); }
 
@@ -383,12 +385,19 @@ const RING_COLORS = [
   ['Electric Blue', '#1e90ff'], ['Lime Green', '#86d03a'], ['Emerald Green', '#178a4f'], ['Pastel Pink', '#f5b5c9'],
   ['Fuchsia Pink', '#de2a8b'], ['Gold', '#cfa83a'], ['Red', '#c42130'], ['Orange Gold', '#e5952a'],
   ['Yellow', '#f1d334'], ['Antique', '#9a8463'], ['Gunmetal', '#4b5359'], ['Purple', '#6a3fa0'],
+  ['Bronze', '#a8703c'],
 ];
 const HANDS = ['Right', 'Left'];
 const CARRY = [['IWB', 'Inside waistband (IWB)'], ['OWB', 'Outside waistband (OWB)']];
 const IWB_STYLES = ['Lil Buck', 'Mini Buck', 'Sidecar', 'Protucker', 'Single Clip Hybrid', 'Other'];
-const NO_IWB_EXTRAS = 'Protucker'; // IWB style that skips belt attachment and concealment claw
+const NO_CLAW = 'Protucker'; // IWB style without the Concealment Claw choice
 const IWB_CLIPS = ['1.5" Fomi', '1.75" Fomi', 'Hart Clip', 'Monoblock', 'Double Grip Hook', 'Ulti-Clip'];
+const SIDECAR_CLIPS = ['DCC Metal Clip', 'Plastic Grip Hook'];
+// Belt attachment choices for each IWB style. Styles listed with [] have no belt attachment.
+const CLIPS_BY_STYLE = { 'Sidecar': SIDECAR_CLIPS, 'Mini Buck': [], 'Protucker': [] };
+const clipOptions = (style) => CLIPS_BY_STYLE[style] || IWB_CLIPS;
+// The saved belt attachment only counts if it is one of the current style's choices.
+const beltAttachment = (h) => (clipOptions(h.iwbStyle).includes(h.clip) ? h.clip : '');
 const YES_NO = ['Yes', 'No'];
 const OWB_LEVELS = ['Level 1', 'Level 2'];
 const OWB_STYLES = ['Taco', 'Pancake', 'QLS'];
@@ -396,9 +405,12 @@ const TACO_ATTACH = ['Belt Slide', 'Combat Loop', 'Paddle', 'Velcro'];
 const QLS_DROP = ['Mid-Drop', 'Low-Drop'];
 const LIGHT = ['No light', 'With light'];
 const MATERIALS = ['Black', 'Black Carbon Fiber', 'Custom Print'];
-const MAG_TYPES = [
-  'Single Stack', 'Double Stack', 'Larger Calibers', 'Single Stack 2 Mag', 'Double Stack 2 Mag',
-  'Large Caliber 2 Mag', 'AR Mag', 'Scorpion Mag',
+// Mag carrier types in categories. The saved value includes the category, e.g. "Double Double: Single Stack Mag".
+const MAG_CATEGORIES = [
+  ['Individual Mag Carrier', ['Single Stack', 'Double Stack', '10/45 Double Stack']],
+  ['Double Mag Carrier', ['Single Stack Double Mag', 'Double Stack Double Mag', '10/45 Double Mag']],
+  ['Double Double', ['Single Stack Mag', 'Double Stack Mag']],
+  ['Rifle Mag Carrier', ['AR Mag', 'Scorpion Mag']],
 ];
 const MAG_FINISH = ['Match Holster', 'Black', 'Custom Print'];
 
@@ -865,6 +877,15 @@ function ringChips(prefix, field, value) {
     `<label class="chip"><input type="radio" id="${prefix}-${field}-${k}" name="${prefix}-${field}" data-field="${field}" value="${esc(name)}"${value === name ? ' checked' : ''}><span><i style="--sw:${hex}"></i>${esc(name)}</span></label>`
   ).join('') + '</div>';
 }
+function magTypeChips(prefix, value) {
+  let k = 0;
+  return `<div id="${prefix}-type">` + MAG_CATEGORIES.map(([cat, types]) =>
+    `<div class="mag-cat"><span class="lbl">${esc(cat)}</span><div class="chips">` + types.map((t) => {
+      const val = cat + ': ' + t;
+      return `<label class="chip"><input type="radio" id="${prefix}-type-${k++}" name="${prefix}-type" data-field="type" value="${esc(val)}"${value === val ? ' checked' : ''}><span>${esc(t)}</span></label>`;
+    }).join('') + '</div></div>'
+  ).join('') + '</div>';
+}
 const group = (label, inner, req) => `<fieldset class="field"><legend${req ? ' class="req"' : ''}>${label}</legend>${inner}</fieldset>`;
 function input(id, field, label, value, opts = {}) {
   const attrs = [
@@ -915,10 +936,9 @@ function holsterCard(h, i) {
     <div class="sub" data-if="carry=IWB">
       ${group('IWB style', chips(p, 'iwbStyle', IWB_STYLES, h.iwbStyle), true)}
       <div data-if="iwbStyle=Other">${area(p + '-iwbOther', 'iwbOther', 'Instructions for Other', h.iwbOther, 'Describe the build', true)}</div>
-      <div class="sub-flat" data-if="iwbStyle!=${NO_IWB_EXTRAS}">
-        ${group('Belt attachment', chips(p, 'clip', IWB_CLIPS, h.clip))}
-        ${group('Concealment Claw', chips(p, 'claw', YES_NO, h.claw))}
-      </div>
+      <div data-if="iwbStyle!=${Object.keys(CLIPS_BY_STYLE).join('|')}">${group('Belt attachment', chips(p, 'clip', IWB_CLIPS, h.clip))}</div>
+      <div data-if="iwbStyle=Sidecar">${group('Belt attachment', chips(p + 's', 'clip', SIDECAR_CLIPS, h.clip))}</div>
+      <div data-if="iwbStyle!=${NO_CLAW}">${group('Concealment Claw', chips(p, 'claw', YES_NO, h.claw))}</div>
     </div>
     <div class="sub" data-if="carry=OWB">
       ${group('Level', chips(p, 'owbLevel', OWB_LEVELS, h.owbLevel))}
@@ -940,7 +960,7 @@ function magCard(m, i) {
   return `<section class="card" data-scope="mag" data-index="${i}">
     <div class="card-head"><h2><span class="kind">Mag carrier</span> ${i + 1}</h2>
       <button type="button" class="btn-link danger" data-remove="mag" data-index="${i}">Remove</button></div>
-    ${group('Carrier type', chips(p, 'type', MAG_TYPES, m.type), true)}
+    ${group('Carrier type', magTypeChips(p, m.type), true)}
     ${group('Finish', chips(p, 'finish', MAG_FINISH, m.finish))}
     <div data-if="finish=Custom Print">${area(p + '-print', 'print', 'Custom print', m.print, 'Describe the print', true)}</div>
     ${group('Accent ring color', ringChips(p, 'ring', m.ring))}
@@ -979,7 +999,7 @@ function applyVisibility(scope) {
   scope.querySelectorAll('[data-if]').forEach((el) => {
     const not = el.dataset.if.includes('!=');
     const [f, val] = el.dataset.if.split(not ? '!=' : '=');
-    el.hidden = (String(obj[f] ?? '') === val) === not;
+    el.hidden = val.split('|').includes(String(obj[f] ?? '')) === not;
   });
 }
 function setField(el, value) {
@@ -1107,10 +1127,8 @@ function holsterLines(h) {
   if (h.carry === 'IWB') {
     L.push(['Carry', 'Inside the waistband (IWB)']);
     L.push(['Style', h.iwbStyle === 'Other' ? 'Other: ' + (h.iwbOther || '(no instructions)') : h.iwbStyle || '—']);
-    if (h.iwbStyle !== NO_IWB_EXTRAS) {
-      L.push(['Belt attachment', h.clip || '—']);
-      L.push(['Concealment claw', h.claw || '—']);
-    }
+    if (clipOptions(h.iwbStyle).length) L.push(['Belt attachment', beltAttachment(h) || '—']);
+    if (h.iwbStyle !== NO_CLAW) L.push(['Concealment claw', h.claw || '—']);
   } else if (h.carry === 'OWB') {
     L.push(['Carry', 'Outside the waistband (OWB)']);
     L.push(['Level', h.owbLevel || '—']);
@@ -1162,9 +1180,9 @@ function csvRows(s, list) {
     const base = [s.name, fmtRange(s.start, s.end), o.seq, fmtDateTime(o.createdAt), c.name, c.phone, c.email, homeAddr(c), shipTo(c)];
     const items = [];
     liveHolsters(o).forEach((h, i) => {
-      const iwb = h.carry === 'IWB', owb = h.carry === 'OWB', iwbX = iwb && h.iwbStyle !== NO_IWB_EXTRAS;
+      const iwb = h.carry === 'IWB', owb = h.carry === 'OWB';
       items.push(['Holster ' + (i + 1), h.hand, h.carry, iwb ? h.iwbStyle : '', iwb && h.iwbStyle === 'Other' ? h.iwbOther : '',
-        iwbX ? h.clip : '', iwbX ? h.claw : '', owb ? h.owbLevel : '', owb ? h.owbStyle : '', owb && h.owbStyle === 'Taco' ? h.attach : '',
+        iwb ? beltAttachment(h) : '', iwb && h.iwbStyle !== NO_CLAW ? h.claw || '' : '', owb ? h.owbLevel : '', owb ? h.owbStyle : '', owb && h.owbStyle === 'Taco' ? h.attach : '',
         owb && h.owbStyle === 'QLS' ? h.qlsDrop : '', h.gun, h.light, h.light === 'With light' ? h.lightModel : '',
         h.material, h.material === 'Custom Print' ? h.materialCustom : '', h.ring, '']);
     });
