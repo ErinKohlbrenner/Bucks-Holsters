@@ -1,5 +1,7 @@
 # Buck's Holsters Orders
 
+**Live app:** https://erinkohlbrenner.github.io/Bucks-Holsters/
+
 A fast, tap-first order app for taking holster and mag carrier orders at gun shows.
 It runs in the phone or tablet browser and works with no signal once it has been opened. Each show gets its own
 Google Sheet (see [SETUP-GOOGLE-SHEETS.md](SETUP-GOOGLE-SHEETS.md)), and a show's orders can be emailed to
@@ -25,10 +27,22 @@ The app is plain static files (`index.html`, `sw.js`, `manifest.webmanifest`, ic
 for example GitHub Pages (repo **Settings → Pages → Deploy from a branch**). Open the page once on the phone, then
 use **Add to Home Screen** so it opens like an app and works offline.
 
-## Changing option lists
+## Changing options and prices
 
-All choices (accent ring colors, IWB styles, clips, mag carrier types, and so on) are lists near the top of the
-`<script>` in `index.html`. Add a name to a list and it shows up as a new button.
+All choices (accent ring colors, IWB styles, belt attachments, mag carrier types, and so on) are lists near the
+top of the `<script>` in `index.html`. Add a name to a list and it shows up as a new button.
+
+Prices live in one place, the `PRICE` list in `index.html` (search for "Prices (change them here)"): holster
+and mag carrier base prices, add-ons (Level 2, light, Solid Color, Carbon Fiber, Custom Print, leather, belt
+attachments) and the $5 shipping per order. Every order shows a price breakdown and total, and the total
+goes into the email, the spreadsheet file and the Google Sheet. Sales tax is not added, because it differs by show.
+
+## Still to do
+
+- Switch the email address back to support@bucksholsters.com when testing is done
+  (`ORDER_EMAIL` near the top of the `<script>` in `index.html`).
+- Open questions from setup: whether Single Clip Hybrid and Other should use the Lil Buck belt attachment
+  prices (they do now), and whether a Match Holster mag carrier should match a holster other than Holster 1.
 
 ## Where orders are saved
 
