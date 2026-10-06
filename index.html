@@ -400,11 +400,11 @@ const HANDS = ['Right', 'Left'];
 const CARRY = [['IWB', 'Inside waistband (IWB)'], ['OWB', 'Outside waistband (OWB)']];
 const IWB_STYLES = ['Lil Buck', 'Mini Buck', 'Sidecar', 'Modular Sidecar', 'Protucker', 'Single Clip Hybrid', 'Other'];
 const NO_CLAW = 'Protucker'; // IWB style without the Concealment Claw choice
-const IWB_CLIPS = ['1.5" Fomi', '1.75" Fomi', 'Hart Clip', 'Monoblock', 'Double Grip Hook', 'Ulti-Clip'];
+const IWB_CLIPS = ['1.5" Fomi', '1.75" Fomi', 'Hart Clip', 'DCC Monoblock', 'Double Grip Hook', 'Ulti-Clip'];
 const SIDECAR_CLIPS = ['DCC Metal Clip', 'Plastic Grip Hook'];
+const MAG_CLIPS = IWB_CLIPS.filter((c) => c !== 'Double Grip Hook'); // a grip hook doesn't work on a mag carrier
 // Belt attachment choices for each IWB style. Styles listed with [] have no belt attachment.
-const CLIPS_BY_STYLE = { 'Sidecar': SIDECAR_CLIPS, 'Modular Sidecar': SIDECAR_CLIPS, 'Mini Buck': [], 'Protucker': [] };
-const SIDECAR_STYLES = Object.keys(CLIPS_BY_STYLE).filter((k) => CLIPS_BY_STYLE[k] === SIDECAR_CLIPS);
+const CLIPS_BY_STYLE = { 'Sidecar': SIDECAR_CLIPS, 'Mini Buck': [], 'Protucker': [] };
 const clipOptions = (style) => CLIPS_BY_STYLE[style] || IWB_CLIPS;
 // The saved belt attachment only counts if it is one of the current style's choices.
 const beltAttachment = (h) => (clipOptions(h.iwbStyle).includes(h.clip) ? h.clip : '');
@@ -447,6 +447,7 @@ const MAG_FINISH = ['Match Holster', 'Black', 'Solid Color', 'Carbon Fiber', 'Cu
 // Orders saved before "Black Carbon Fiber" was renamed.
 function upgradeHolster(h) {
   if (h.material === 'Black Carbon Fiber') { h.material = 'Carbon Fiber'; h.cfColor = h.cfColor || 'Black'; }
+  if (h.clip === 'Monoblock') h.clip = 'DCC Monoblock';
 }
 
 // ---- Prices (change them here) ----
@@ -457,6 +458,18 @@ const PRICE = {
   light: 14.99,
   material: { 'Solid Color': 4.99, 'Carbon Fiber': 9.99, 'Custom Print': 14.99 }, // added cost, holsters and mag carriers
   leather: { 'Cow Leather': 0, 'Buffalo Leather': 5, 'Horse Hide': 10 },
+  // Belt attachment added cost. Anything not listed is included in the price.
+  clip: { 'DCC Monoblock': 4.99, 'Double Grip Hook': 9.99, 'Ulti-Clip': 13.99 },
+  clipByStyle: {
+    'Sidecar': { 'DCC Metal Clip': 29.99 },
+    'Modular Sidecar': { 'DCC Monoblock': 9.99, 'Ulti-Clip': 26.98 },
+  },
+  taco: { 'Velcro': 4.99 },
+  // Mag carrier belt attachments (only these categories have them).
+  magClip: {
+    'Individual Mag Carrier': { 'DCC Monoblock': 4.99, 'Ulti-Clip': 13.99 },
+    'Double Double': { 'DCC Monoblock': 9.99, 'Ulti-Clip': 27.99 },
+  },
   mag: { 'Individual Mag Carrier': 24.99, 'Double Mag Carrier': 49.99, 'Double Double': 54.99, 'Rifle Mag Carrier': 39.99 },
   shipping: 5.00, // added once to every order
 };
@@ -464,6 +477,12 @@ const PRICE = {
 const UNPRICED_IWB = IWB_STYLES.filter((st) => !(st in PRICE.iwb));
 const money = (n) => '$' + n.toFixed(2);
 const parsePrice = (v) => { const n = parseFloat(String(v ?? '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
+const clipPrice = (style, clip) => (PRICE.clipByStyle[style] || {})[clip] ?? PRICE.clip[clip] ?? 0;
+const MAG_CLIP_CATS = Object.keys(PRICE.magClip);
+const magClip = (m) => (MAG_CLIP_CATS.includes(m.magCat) && MAG_CLIPS.includes(m.clip) ? m.clip : '');
+const magClipPrice = (cat, clip) => (PRICE.magClip[cat] || {})[clip] || 0;
+// Chip options with the added cost on the button.
+const pricedOptions = (list, priceOf) => list.map((c) => [c, c, priceOf(c) ? '+' + money(priceOf(c)) : '']);
 const sumPrices = (amounts) => amounts.reduce((t, a) => t + Math.round((a || 0) * 100), 0) / 100;
 
 // Each line is [label, amount]; amount is null when the price still needs to be typed in.
@@ -472,9 +491,12 @@ function holsterPrice(h) {
   if (h.carry === 'IWB' && h.iwbStyle) {
     L.push([h.iwbStyle + ' (IWB)', h.iwbStyle in PRICE.iwb ? PRICE.iwb[h.iwbStyle] : parsePrice(h.customPrice)]);
     if (LEATHER_STYLES.includes(h.iwbStyle) && PRICE.leather[h.leather]) L.push([h.leather, PRICE.leather[h.leather]]);
+    const clip = beltAttachment(h);
+    if (clip && clipPrice(h.iwbStyle, clip)) L.push([clip, clipPrice(h.iwbStyle, clip)]);
   } else if (h.carry === 'OWB' && h.owbStyle) {
     L.push([h.owbStyle + ' (OWB)', PRICE.owb[h.owbStyle]]);
     if (h.owbLevel === 'Level 2') L.push(['Level 2', PRICE.level2]);
+    if (h.owbStyle === 'Taco' && PRICE.taco[h.attach]) L.push([h.attach, PRICE.taco[h.attach]]);
   }
   if (h.light === 'With light') L.push(['Light', PRICE.light]);
   const mat = materialPrice(holsterMat(h));
@@ -486,6 +508,8 @@ const matchedHolster = (o) => liveHolsters(o)[0];
 function magPrice(m, o) {
   const L = [];
   if (m.magCat in PRICE.mag) L.push([m.magCat, PRICE.mag[m.magCat]]);
+  const clip = magClip(m);
+  if (clip && magClipPrice(m.magCat, clip)) L.push([clip, magClipPrice(m.magCat, clip)]);
   if (m.finish === 'Match Holster') {
     const h = o && matchedHolster(o), mat = h && materialPrice(holsterMat(h));
     if (mat) L.push(['Match holster: ' + mat[0].toLowerCase(), mat[1]]);
@@ -1058,15 +1082,14 @@ function holsterCard(h, i) {
       <div data-if="iwbStyle=Other">${area(p + '-iwbOther', 'iwbOther', 'Instructions for Other', h.iwbOther, 'Describe the build', true)}</div>
       <div data-if="iwbStyle=${UNPRICED_IWB.join('|')}">${input(p + '-customPrice', 'customPrice', 'Price for this holster', h.customPrice, { inputmode: 'decimal', placeholder: 'e.g. 99.99', req: true })}</div>
       <div data-if="iwbStyle=${LEATHER_STYLES.join('|')}">${group('Leather type', chips(p, 'leather', Object.keys(PRICE.leather).map((l) => [l, l, PRICE.leather[l] ? '+' + money(PRICE.leather[l]) : 'included']), h.leather), true)}</div>
-      <div data-if="iwbStyle!=${Object.keys(CLIPS_BY_STYLE).join('|')}">${group('Belt attachment', chips(p, 'clip', IWB_CLIPS, h.clip))}</div>
-      <div data-if="iwbStyle=${SIDECAR_STYLES.join('|')}">${group('Belt attachment', chips(p + 's', 'clip', SIDECAR_CLIPS, h.clip))}</div>
+      ${IWB_STYLES.map((st, k) => clipOptions(st).length ? `<div data-if="iwbStyle=${st}">${group('Belt attachment', chips(p + 'c' + k, 'clip', pricedOptions(clipOptions(st), (c) => clipPrice(st, c)), h.clip))}</div>` : '').join('')}
       <div data-if="iwbStyle!=${NO_CLAW}">${group('Concealment Claw', chips(p, 'claw', YES_NO, h.claw))}</div>
       <div data-if="iwbStyle=${TEGRIS_STYLE}">${group('Tegris color', chips(p, 'tegris', TEGRIS_COLORS, h.tegris), true)}</div>
     </div>
     <div class="sub" data-if="carry=OWB">
       ${group('Level', chips(p, 'owbLevel', [['Level 1'], ['Level 2', 'Level 2', '+' + money(PRICE.level2)]], h.owbLevel))}
       ${group('OWB style', chips(p, 'owbStyle', OWB_STYLES.map((st) => [st, st, money(PRICE.owb[st])]), h.owbStyle), true)}
-      <div data-if="owbStyle=Taco">${group('Belt attachment', chips(p, 'attach', TACO_ATTACH, h.attach), true)}</div>
+      <div data-if="owbStyle=Taco">${group('Belt attachment', chips(p, 'attach', pricedOptions(TACO_ATTACH, (c) => PRICE.taco[c] || 0), h.attach), true)}</div>
       <div data-if="owbStyle=QLS">${group('QLS drop', chips(p, 'qlsDrop', QLS_DROP, h.qlsDrop), true)}</div>
     </div>
     ${input(p + '-gun', 'gun', 'Gun make &amp; model', h.gun, { list: 'guns', placeholder: 'e.g. Glock 19', req: true })}
@@ -1087,7 +1110,8 @@ function magCard(m, i) {
     <div class="card-head"><h2><span class="kind">Mag carrier</span> ${i + 1}</h2>
       <button type="button" class="btn-link danger" data-remove="mag" data-index="${i}">Remove</button></div>
     ${group('Carrier type', chips(p, 'magCat', MAG_CATEGORIES.map(([c]) => [c, c, money(PRICE.mag[c])]), m.magCat, 'big'), true)}
-    ${MAG_CATEGORIES.map(([cat], ci) => `<div class="sub" data-if="magCat=${esc(cat)}">${group(esc(cat), magTypeChips(p, ci, m.type), true)}</div>`).join('')}
+    ${MAG_CATEGORIES.map(([cat], ci) => `<div class="sub" data-if="magCat=${esc(cat)}">${group(esc(cat), magTypeChips(p, ci, m.type), true)}${
+      MAG_CLIP_CATS.includes(cat) ? group('Belt attachment', chips(p + 'c' + ci, 'clip', pricedOptions(MAG_CLIPS, (c) => magClipPrice(cat, c)), m.clip)) : ''}</div>`).join('')}
     ${group('Material / print', chips(p, 'finish', finishOptions(MAG_FINISH), m.finish))}
     <div data-if="finish=Solid Color">${input(p + '-solidColor', 'solidColor', 'Solid color', m.solidColor, { placeholder: 'e.g. OD Green, Tan, Red', req: true })}</div>
     <div data-if="finish=Carbon Fiber">${input(p + '-cfColor', 'cfColor', 'Carbon fiber color', m.cfColor, { placeholder: 'e.g. Black, Red, Blue', req: true })}</div>
@@ -1298,6 +1322,7 @@ function holsterLines(h) {
 function magLines(m, o) {
   return [
     ['Type', magType(m) || (m.magCat ? m.magCat + ' (type not chosen)' : m.type || '—')],
+    ...(MAG_CLIP_CATS.includes(m.magCat) ? [['Belt attachment', magClip(m) || '—']] : []),
     ['Material / print', magMaterialText(m, o)],
     ['Accent ring', m.ring || 'None'],
   ];
@@ -1339,7 +1364,7 @@ function batchText(s, list) {
 }
 
 const CSV_COLS = ['Show', 'Show Dates', 'Order #', 'Date', 'Customer', 'Phone', 'Email', 'Address', 'Ship To', 'Item',
-  'Hand', 'Carry', 'IWB Style', 'Other Instructions', 'Leather', 'IWB Belt Attachment', 'Concealment Claw', 'OWB Level',
+  'Hand', 'Carry', 'IWB Style', 'Other Instructions', 'Leather', 'Belt Attachment', 'Concealment Claw', 'OWB Level',
   'OWB Style', 'Taco Belt Attachment', 'QLS Drop', 'Gun', 'Light', 'Light Model', 'Material / Print', 'Solid Color', 'Carbon Fiber Color',
   'Custom Print', 'Tegris Color', 'Accent Ring', 'Mag Carrier Type', 'Item Price', 'Shipping', 'Order Total', 'Special Instructions'];
 // One row per holster or mag carrier; order details repeat on each row. Shipping is on the first row of each order.
@@ -1356,7 +1381,7 @@ function csvRows(s, list) {
       items.push({ 'Item': 'Holster ' + (i + 1), 'Hand': h.hand, 'Carry': h.carry,
         'IWB Style': iwb ? h.iwbStyle : '', 'Other Instructions': iwb && h.iwbStyle === 'Other' ? h.iwbOther : '',
         'Leather': iwb && LEATHER_STYLES.includes(h.iwbStyle) ? h.leather : '',
-        'IWB Belt Attachment': iwb ? beltAttachment(h) : '', 'Concealment Claw': iwb && h.iwbStyle !== NO_CLAW ? h.claw : '',
+        'Belt Attachment': iwb ? beltAttachment(h) : '', 'Concealment Claw': iwb && h.iwbStyle !== NO_CLAW ? h.claw : '',
         'OWB Level': owb ? h.owbLevel : '', 'OWB Style': owb ? h.owbStyle : '',
         'Taco Belt Attachment': owb && h.owbStyle === 'Taco' ? h.attach : '', 'QLS Drop': owb && h.owbStyle === 'QLS' ? h.qlsDrop : '',
         'Gun': h.gun, 'Light': h.light, 'Light Model': h.light === 'With light' ? h.lightModel : '',
@@ -1367,7 +1392,7 @@ function csvRows(s, list) {
         'Item Price': money(sumPrices(holsterPrice(h).map(([, a]) => a))) });
     });
     liveMags(o).forEach((m, i) => {
-      items.push({ 'Item': 'Mag carrier ' + (i + 1), 'Material / Print': magMaterialText(m, o),
+      items.push({ 'Item': 'Mag carrier ' + (i + 1), 'Belt Attachment': magClip(m), 'Material / Print': magMaterialText(m, o),
         'Solid Color': m.finish === 'Solid Color' ? m.solidColor : '', 'Carbon Fiber Color': m.finish === 'Carbon Fiber' ? m.cfColor : '', 'Custom Print': m.finish === 'Custom Print' ? m.print : '',
         'Accent Ring': m.ring, 'Mag Carrier Type': magType(m) || m.magCat || m.type,
         'Item Price': money(sumPrices(magPrice(m, o).map(([, a]) => a))) });
