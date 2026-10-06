@@ -414,7 +414,8 @@ const OWB_STYLES = ['Taco', 'Pancake', 'QLS'];
 const TACO_ATTACH = ['Belt Slide', 'Combat Loop', 'Paddle', 'Velcro'];
 const QLS_DROP = ['Mid-Drop', 'Low-Drop'];
 const LIGHT = ['No light', 'With light'];
-const MATERIALS = ['Black', 'Carbon Fiber', 'Custom Print'];
+const MATERIALS = ['Black', 'Solid Color', 'Carbon Fiber', 'Custom Print'];
+const TEGRIS_STYLE = 'Modular Sidecar'; // the only style with a Tegris color
 const TEGRIS_COLORS = ['Black', 'Gray', 'Tan'];
 const LEATHER_STYLES = ['Protucker', 'Single Clip Hybrid'];
 // Mag carriers: pick a category first, then a type in it.
@@ -442,7 +443,7 @@ function upgradeMag(m) {
   if (RENAMED_MAG_CATEGORIES[cat]) { cat = RENAMED_MAG_CATEGORIES[cat]; m.type = cat + m.type.slice(i); }
   if (MAG_CATEGORIES.some(([c]) => c === cat)) m.magCat = cat;
 }
-const MAG_FINISH = ['Match Holster', 'Black', 'Carbon Fiber', 'Custom Print'];
+const MAG_FINISH = ['Match Holster', 'Black', 'Solid Color', 'Carbon Fiber', 'Custom Print'];
 // Orders saved before "Black Carbon Fiber" was renamed.
 function upgradeHolster(h) {
   if (h.material === 'Black Carbon Fiber') { h.material = 'Carbon Fiber'; h.cfColor = h.cfColor || 'Black'; }
@@ -450,12 +451,11 @@ function upgradeHolster(h) {
 
 // ---- Prices (change them here) ----
 const PRICE = {
-  iwb: { 'Lil Buck': 49.99, 'Mini Buck': 59.99, 'Sidecar': 89.99, 'Protucker': 49.99, 'Single Clip Hybrid': 59.99 },
+  iwb: { 'Lil Buck': 49.99, 'Mini Buck': 59.99, 'Sidecar': 89.99, 'Modular Sidecar': 139.99, 'Protucker': 49.99, 'Single Clip Hybrid': 59.99 },
   owb: { 'Taco': 54.99, 'Pancake': 59.99, 'QLS': 69.99 },
   level2: 59.99,
   light: 14.99,
-  carbonFiber: 9.99,
-  customPrint: 14.99,
+  material: { 'Solid Color': 4.99, 'Carbon Fiber': 9.99, 'Custom Print': 14.99 }, // added cost, holsters and mag carriers
   leather: { 'Cow Leather': 0, 'Buffalo Leather': 5, 'Horse Hide': 10 },
   mag: { 'Individual Mag Carrier': 24.99, 'Double Mag Carrier': 49.99, 'Double Double': 54.99, 'Rifle Mag Carrier': 39.99 },
   shipping: 5.00, // added once to every order
@@ -477,21 +477,43 @@ function holsterPrice(h) {
     if (h.owbLevel === 'Level 2') L.push(['Level 2', PRICE.level2]);
   }
   if (h.light === 'With light') L.push(['Light', PRICE.light]);
-  if (h.material === 'Carbon Fiber') L.push(['Carbon fiber', PRICE.carbonFiber]);
-  if (h.material === 'Custom Print') L.push(['Custom print', PRICE.customPrint]);
+  const mat = materialPrice(holsterMat(h));
+  if (mat) L.push(mat);
   return L;
 }
-function magPrice(m) {
+// "Match Holster" mag carriers match the order's first holster and cost what its Material / Print costs.
+const matchedHolster = (o) => liveHolsters(o)[0];
+function magPrice(m, o) {
   const L = [];
   if (m.magCat in PRICE.mag) L.push([m.magCat, PRICE.mag[m.magCat]]);
-  if (m.finish === 'Carbon Fiber') L.push(['Carbon fiber', PRICE.carbonFiber]);
-  if (m.finish === 'Custom Print') L.push(['Custom print', PRICE.customPrint]);
+  if (m.finish === 'Match Holster') {
+    const h = o && matchedHolster(o), mat = h && materialPrice(holsterMat(h));
+    if (mat) L.push(['Match holster: ' + mat[0].toLowerCase(), mat[1]]);
+  } else {
+    const mat = materialPrice(magMat(m));
+    if (mat) L.push(mat);
+  }
   return L;
+}
+// Material / Print, the same for holsters and mag carriers.
+const holsterMat = (h) => ({ kind: h.material, solid: h.solidColor, cf: h.cfColor, print: h.materialCustom });
+const magMat = (m) => ({ kind: m.finish, solid: m.solidColor, cf: m.cfColor, print: m.print });
+const materialPrice = (x) => (PRICE.material[x.kind] ? [x.kind.charAt(0) + x.kind.slice(1).toLowerCase(), PRICE.material[x.kind]] : null);
+function materialText(x) {
+  if (x.kind === 'Custom Print') return 'Custom print: ' + (x.print || '(not described)');
+  if (x.kind === 'Carbon Fiber') return 'Carbon fiber: ' + (x.cf || '(color not given)');
+  if (x.kind === 'Solid Color') return 'Solid color: ' + (x.solid || '(color not given)');
+  return x.kind || '—';
+}
+function magMaterialText(m, o) {
+  if (m.finish !== 'Match Holster') return materialText(magMat(m));
+  const h = o && matchedHolster(o);
+  return 'Match holster' + (h ? ' (' + materialText(holsterMat(h)) + ')' : '');
 }
 function orderPricing(o) {
   const items = [
     ...liveHolsters(o).map((h, i) => ['Holster ' + (i + 1), holsterPrice(h)]),
-    ...liveMags(o).map((m, i) => ['Mag carrier ' + (i + 1), magPrice(m)]),
+    ...liveMags(o).map((m, i) => ['Mag carrier ' + (i + 1), magPrice(m, o)]),
   ].map(([name, lines]) => ({ name, lines, total: sumPrices(lines.map(([, a]) => a)), missing: lines.some(([, a]) => a == null) }));
   const shipping = items.length ? PRICE.shipping : 0;
   return { items, shipping, total: sumPrices([...items.map((it) => it.total), shipping]), missing: items.some((it) => it.missing) };
@@ -613,6 +635,8 @@ function problems(o) {
     if (h.light === 'With light' && !(h.lightModel || '').trim()) p.push([q + '-lightModel', n + 'which light']);
     if (h.material === 'Custom Print' && !(h.materialCustom || '').trim()) p.push([q + '-materialCustom', n + 'custom print description']);
     if (h.material === 'Carbon Fiber' && !(h.cfColor || '').trim()) p.push([q + '-cfColor', n + 'carbon fiber color']);
+    if (h.material === 'Solid Color' && !(h.solidColor || '').trim()) p.push([q + '-solidColor', n + 'solid color']);
+    if (h.carry === 'IWB' && h.iwbStyle === TEGRIS_STYLE && !h.tegris) p.push([q + '-tegris', n + 'Tegris color']);
     if (h.carry === 'IWB' && LEATHER_STYLES.includes(h.iwbStyle) && !h.leather) p.push([q + '-leather', n + 'leather type']);
     if (h.carry === 'IWB' && UNPRICED_IWB.includes(h.iwbStyle) && parsePrice(h.customPrice) == null) p.push([q + '-customPrice', n + 'price for ' + h.iwbStyle]);
   });
@@ -625,6 +649,7 @@ function problems(o) {
     else if (!magType(m)) p.push([q + '-type' + ci, n + 'which ' + m.magCat]);
     if (m.finish === 'Custom Print' && !(m.print || '').trim()) p.push([q + '-print', n + 'custom print description']);
     if (m.finish === 'Carbon Fiber' && !(m.cfColor || '').trim()) p.push([q + '-cfColor', n + 'carbon fiber color']);
+    if (m.finish === 'Solid Color' && !(m.solidColor || '').trim()) p.push([q + '-solidColor', n + 'solid color']);
   });
   return p;
 }
@@ -843,7 +868,7 @@ function sheetRow(o) {
     seq: o.seq, created: fmtDateTime(o.createdAt), updated: fmtDateTime(o.updatedAt),
     name: c.name, phone: c.phone, email: c.email, address: homeAddr(c), shipTo: shipTo(c),
     holsters: liveHolsters(o).map((h, i) => `Holster ${i + 1}: ` + holsterLines(h).map(([k, v]) => k + ': ' + v).join('; ') + '; Price: ' + money(sumPrices(holsterPrice(h).map(([, a]) => a)))).join('\n'),
-    mags: liveMags(o).map((m, i) => `Mag carrier ${i + 1}: ` + magLines(m).map(([k, v]) => k + ': ' + v).join('; ') + '; Price: ' + money(sumPrices(magPrice(m).map(([, a]) => a)))).join('\n'),
+    mags: liveMags(o).map((m, i) => `Mag carrier ${i + 1}: ` + magLines(m, o).map(([k, v]) => k + ': ' + v).join('; ') + '; Price: ' + money(sumPrices(magPrice(m, o).map(([, a]) => a)))).join('\n'),
     notes: o.notes,
     status: 'Total ' + money(orderPricing(o).total) + ' · ' + (p.length ? 'Needs info: ' + p.map(([, m]) => m).join('; ') : 'Complete'),
   };
@@ -1019,7 +1044,7 @@ function customerCard(c) {
 }
 
 // Material/finish choices with their added cost shown on the button.
-const finishOptions = (list) => list.map((f) => [f, f, f === 'Carbon Fiber' ? '+' + money(PRICE.carbonFiber) : f === 'Custom Print' ? '+' + money(PRICE.customPrint) : '']);
+const finishOptions = (list) => list.map((f) => [f, f, PRICE.material[f] ? '+' + money(PRICE.material[f]) : '']);
 function holsterCard(h, i) {
   const p = 'h' + i;
   upgradeHolster(h);
@@ -1036,6 +1061,7 @@ function holsterCard(h, i) {
       <div data-if="iwbStyle!=${Object.keys(CLIPS_BY_STYLE).join('|')}">${group('Belt attachment', chips(p, 'clip', IWB_CLIPS, h.clip))}</div>
       <div data-if="iwbStyle=${SIDECAR_STYLES.join('|')}">${group('Belt attachment', chips(p + 's', 'clip', SIDECAR_CLIPS, h.clip))}</div>
       <div data-if="iwbStyle!=${NO_CLAW}">${group('Concealment Claw', chips(p, 'claw', YES_NO, h.claw))}</div>
+      <div data-if="iwbStyle=${TEGRIS_STYLE}">${group('Tegris color', chips(p, 'tegris', TEGRIS_COLORS, h.tegris), true)}</div>
     </div>
     <div class="sub" data-if="carry=OWB">
       ${group('Level', chips(p, 'owbLevel', [['Level 1'], ['Level 2', 'Level 2', '+' + money(PRICE.level2)]], h.owbLevel))}
@@ -1047,9 +1073,9 @@ function holsterCard(h, i) {
     ${group('Weapon light', chips(p, 'light', [['No light'], ['With light', 'With light', '+' + money(PRICE.light)]], h.light))}
     <div data-if="light=With light">${input(p + '-lightModel', 'lightModel', 'Which light', h.lightModel, { list: 'lights', placeholder: 'e.g. Streamlight TLR-7A', req: true })}</div>
     ${group('Material / print', chips(p, 'material', finishOptions(MATERIALS), h.material))}
+    <div data-if="material=Solid Color">${input(p + '-solidColor', 'solidColor', 'Solid color', h.solidColor, { placeholder: 'e.g. OD Green, Tan, Red', req: true })}</div>
     <div data-if="material=Carbon Fiber">${input(p + '-cfColor', 'cfColor', 'Carbon fiber color', h.cfColor, { placeholder: 'e.g. Black, Red, Blue', req: true })}</div>
     <div data-if="material=Custom Print">${area(p + '-materialCustom', 'materialCustom', 'Custom print / design', h.materialCustom, 'Describe the print or design', true)}</div>
-    ${group('Tegris color', chips(p, 'tegris', TEGRIS_COLORS, h.tegris))}
     ${group('Accent ring color', ringChips(p, 'ring', h.ring))}
   </section>`;
 }
@@ -1062,7 +1088,8 @@ function magCard(m, i) {
       <button type="button" class="btn-link danger" data-remove="mag" data-index="${i}">Remove</button></div>
     ${group('Carrier type', chips(p, 'magCat', MAG_CATEGORIES.map(([c]) => [c, c, money(PRICE.mag[c])]), m.magCat, 'big'), true)}
     ${MAG_CATEGORIES.map(([cat], ci) => `<div class="sub" data-if="magCat=${esc(cat)}">${group(esc(cat), magTypeChips(p, ci, m.type), true)}</div>`).join('')}
-    ${group('Finish', chips(p, 'finish', finishOptions(MAG_FINISH), m.finish))}
+    ${group('Material / print', chips(p, 'finish', finishOptions(MAG_FINISH), m.finish))}
+    <div data-if="finish=Solid Color">${input(p + '-solidColor', 'solidColor', 'Solid color', m.solidColor, { placeholder: 'e.g. OD Green, Tan, Red', req: true })}</div>
     <div data-if="finish=Carbon Fiber">${input(p + '-cfColor', 'cfColor', 'Carbon fiber color', m.cfColor, { placeholder: 'e.g. Black, Red, Blue', req: true })}</div>
     <div data-if="finish=Custom Print">${area(p + '-print', 'print', 'Custom print', m.print, 'Describe the print', true)}</div>
     ${group('Accent ring color', ringChips(p, 'ring', m.ring))}
@@ -1253,6 +1280,7 @@ function holsterLines(h) {
     if (LEATHER_STYLES.includes(h.iwbStyle)) L.push(['Leather', h.leather || '—']);
     if (clipOptions(h.iwbStyle).length) L.push(['Belt attachment', beltAttachment(h) || '—']);
     if (h.iwbStyle !== NO_CLAW) L.push(['Concealment claw', h.claw || '—']);
+    if (h.iwbStyle === TEGRIS_STYLE) L.push(['Tegris color', h.tegris || '—']);
   } else if (h.carry === 'OWB') {
     L.push(['Carry', 'Outside the waistband (OWB)']);
     L.push(['Level', h.owbLevel || '—']);
@@ -1263,17 +1291,14 @@ function holsterLines(h) {
   } else L.push(['Carry', '—']);
   L.push(['Gun', h.gun || '—']);
   L.push(['Light', h.light === 'With light' ? 'Yes, ' + (h.lightModel || 'model not given') : h.light === 'No light' ? 'No light' : '—']);
-  L.push(['Material', h.material === 'Custom Print' ? 'Custom print: ' + (h.materialCustom || '(not described)')
-    : h.material === 'Carbon Fiber' ? 'Carbon fiber: ' + (h.cfColor || '(color not given)') : h.material || '—']);
-  L.push(['Tegris color', h.tegris || '—']);
+  L.push(['Material / print', materialText(holsterMat(h))]);
   L.push(['Accent ring', h.ring || 'None']);
   return L;
 }
-function magLines(m) {
+function magLines(m, o) {
   return [
     ['Type', magType(m) || (m.magCat ? m.magCat + ' (type not chosen)' : m.type || '—')],
-    ['Finish', m.finish === 'Custom Print' ? 'Custom print: ' + (m.print || '(not described)')
-      : m.finish === 'Carbon Fiber' ? 'Carbon fiber: ' + (m.cfColor || '(color not given)') : m.finish || '—'],
+    ['Material / print', magMaterialText(m, o)],
     ['Accent ring', m.ring || 'None'],
   ];
 }
@@ -1289,7 +1314,7 @@ function orderText(o) {
     ['Address', homeAddr(c) || '—'], ['Ship to', shipTo(c)],
   ]));
   liveHolsters(o).forEach((h, i) => out.push('', 'HOLSTER ' + (i + 1), fmtLines(holsterLines(h))));
-  liveMags(o).forEach((m, i) => out.push('', 'MAG CARRIER ' + (i + 1), fmtLines(magLines(m))));
+  liveMags(o).forEach((m, i) => out.push('', 'MAG CARRIER ' + (i + 1), fmtLines(magLines(m, o))));
   if (o.notes.trim()) out.push('', 'SPECIAL INSTRUCTIONS', '  ' + o.notes.trim().replace(/\n/g, '\n  '));
   out.push('', 'PRICE', priceText(o));
   return out.join('\n');
@@ -1315,7 +1340,7 @@ function batchText(s, list) {
 
 const CSV_COLS = ['Show', 'Show Dates', 'Order #', 'Date', 'Customer', 'Phone', 'Email', 'Address', 'Ship To', 'Item',
   'Hand', 'Carry', 'IWB Style', 'Other Instructions', 'Leather', 'IWB Belt Attachment', 'Concealment Claw', 'OWB Level',
-  'OWB Style', 'Taco Belt Attachment', 'QLS Drop', 'Gun', 'Light', 'Light Model', 'Material / Finish', 'Carbon Fiber Color',
+  'OWB Style', 'Taco Belt Attachment', 'QLS Drop', 'Gun', 'Light', 'Light Model', 'Material / Print', 'Solid Color', 'Carbon Fiber Color',
   'Custom Print', 'Tegris Color', 'Accent Ring', 'Mag Carrier Type', 'Item Price', 'Shipping', 'Order Total', 'Special Instructions'];
 // One row per holster or mag carrier; order details repeat on each row. Shipping is on the first row of each order.
 function csvRows(s, list) {
@@ -1335,15 +1360,17 @@ function csvRows(s, list) {
         'OWB Level': owb ? h.owbLevel : '', 'OWB Style': owb ? h.owbStyle : '',
         'Taco Belt Attachment': owb && h.owbStyle === 'Taco' ? h.attach : '', 'QLS Drop': owb && h.owbStyle === 'QLS' ? h.qlsDrop : '',
         'Gun': h.gun, 'Light': h.light, 'Light Model': h.light === 'With light' ? h.lightModel : '',
-        'Material / Finish': h.material, 'Carbon Fiber Color': h.material === 'Carbon Fiber' ? h.cfColor : '',
-        'Custom Print': h.material === 'Custom Print' ? h.materialCustom : '', 'Tegris Color': h.tegris, 'Accent Ring': h.ring,
+        'Material / Print': h.material, 'Solid Color': h.material === 'Solid Color' ? h.solidColor : '',
+        'Carbon Fiber Color': h.material === 'Carbon Fiber' ? h.cfColor : '',
+        'Custom Print': h.material === 'Custom Print' ? h.materialCustom : '',
+        'Tegris Color': iwb && h.iwbStyle === TEGRIS_STYLE ? h.tegris : '', 'Accent Ring': h.ring,
         'Item Price': money(sumPrices(holsterPrice(h).map(([, a]) => a))) });
     });
     liveMags(o).forEach((m, i) => {
-      items.push({ 'Item': 'Mag carrier ' + (i + 1), 'Material / Finish': m.finish,
-        'Carbon Fiber Color': m.finish === 'Carbon Fiber' ? m.cfColor : '', 'Custom Print': m.finish === 'Custom Print' ? m.print : '',
+      items.push({ 'Item': 'Mag carrier ' + (i + 1), 'Material / Print': magMaterialText(m, o),
+        'Solid Color': m.finish === 'Solid Color' ? m.solidColor : '', 'Carbon Fiber Color': m.finish === 'Carbon Fiber' ? m.cfColor : '', 'Custom Print': m.finish === 'Custom Print' ? m.print : '',
         'Accent Ring': m.ring, 'Mag Carrier Type': magType(m) || m.magCat || m.type,
-        'Item Price': money(sumPrices(magPrice(m).map(([, a]) => a))) });
+        'Item Price': money(sumPrices(magPrice(m, o).map(([, a]) => a))) });
     });
     if (!items.length) items.push({});
     items[0]['Shipping'] = money(pr.shipping);
