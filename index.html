@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2e5a39">
+<meta name="theme-color" content="#0e0e0e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="BH Orders">
 <link rel="manifest" href="manifest.webmanifest">
@@ -14,36 +14,24 @@
 <title>Buck's Holsters Orders</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Saira+Condensed:wght@600;700&display=swap">
 <style>
-/* Layout: one-column bench sheet. Sticky order bar on top, stacked section cards, every choice a big tap chip. */
+/* Layout: one-column bench sheet. Sticky order bar on top, stacked section cards, every choice a big tap chip.
+   Colors: Buck's Holsters black and orange, one dark look on every phone. Change --accent to adjust the orange. */
 :root {
-  --bg: #eceee9;
-  --surface: #fbfbf9;
-  --ink: #1a1f1b;
-  --muted: #586259;
-  --line: #cdd3ca;
-  --accent: #2e5a39;
-  --accent-ink: #f4f7f2;
-  --accent-soft: #dde8dd;
-  --brass: #94681c;
-  --danger: #a32a20;
-  --danger-soft: #f6e2de;
-  --ok: #2e6b3e;
+  --bg: #0e0e0e;
+  --surface: #1a1a1a;
+  --ink: #f4f2ef;
+  --muted: #a8a29c;
+  --line: #34312e;
+  --accent: #f26b1d;
+  --accent-ink: #111111;
+  --accent-soft: #3a2415;
+  --brass: #ff9a52;
+  --danger: #ff6f61;
+  --danger-soft: #3d1b18;
+  --ok: #8fd69a;
   --display: 'Saira Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
   --body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --r: 12px;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #131714; --surface: #1c211d; --ink: #e6ebe4; --muted: #9ba69c; --line: #343d36;
-    --accent: #86c493; --accent-ink: #0f1a12; --accent-soft: #24342a; --brass: #d9a94e;
-    --danger: #f08a7e; --danger-soft: #3a211e; --ok: #86c493;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #131714; --surface: #1c211d; --ink: #e6ebe4; --muted: #9ba69c; --line: #343d36;
-  --accent: #86c493; --accent-ink: #0f1a12; --accent-soft: #24342a; --brass: #d9a94e;
-  --danger: #f08a7e; --danger-soft: #3a211e; --ok: #86c493;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -120,7 +108,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .o-name { font-weight: 700; font-size: 17px; min-width: 0; overflow-wrap: anywhere; }
 .o-sum { grid-column: 1 / -1; color: var(--muted); font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
 .pill { justify-self: end; align-self: start; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
-.pill.ready { background: var(--accent-soft); color: var(--ok); }
+.pill.ready { background: #1f3323; color: var(--ok); }
 .pill.sent { background: transparent; color: var(--muted); border: 1px solid var(--line); }
 .pill.todo { background: var(--danger-soft); color: var(--danger); }
 .empty { background: var(--surface); border: 1.5px dashed var(--line); border-radius: var(--r); padding: 20px; color: var(--muted); margin: 0; }
@@ -157,6 +145,7 @@ input[type=text], input[type=email], input[type=tel], input[type=date], textarea
 }
 textarea { min-height: 84px; resize: vertical; line-height: 1.4; }
 input:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.sub-flat { display: grid; gap: 16px; }
 .sub { display: grid; gap: 16px; padding-left: 14px; border-left: 3px solid var(--accent-soft); }
 .req::after { content: ' required'; text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--brass); }
 
@@ -397,8 +386,10 @@ const RING_COLORS = [
 ];
 const HANDS = ['Right', 'Left'];
 const CARRY = [['IWB', 'Inside waistband (IWB)'], ['OWB', 'Outside waistband (OWB)']];
-const IWB_STYLES = ['Lil Buck', 'Mini Buck', 'Sidecar', 'Other'];
+const IWB_STYLES = ['Lil Buck', 'Mini Buck', 'Sidecar', 'Protucker', 'Single Clip Hybrid', 'Other'];
+const NO_IWB_EXTRAS = 'Protucker'; // IWB style that skips belt attachment and concealment claw
 const IWB_CLIPS = ['1.5" Fomi', '1.75" Fomi', 'Hart Clip', 'Monoblock', 'Double Grip Hook', 'Ulti-Clip'];
+const YES_NO = ['Yes', 'No'];
 const OWB_LEVELS = ['Level 1', 'Level 2'];
 const OWB_STYLES = ['Taco', 'Pancake', 'QLS'];
 const TACO_ATTACH = ['Belt Slide', 'Combat Loop', 'Paddle', 'Velcro'];
@@ -924,7 +915,10 @@ function holsterCard(h, i) {
     <div class="sub" data-if="carry=IWB">
       ${group('IWB style', chips(p, 'iwbStyle', IWB_STYLES, h.iwbStyle), true)}
       <div data-if="iwbStyle=Other">${area(p + '-iwbOther', 'iwbOther', 'Instructions for Other', h.iwbOther, 'Describe the build', true)}</div>
-      ${group('Clip', chips(p, 'clip', IWB_CLIPS, h.clip))}
+      <div class="sub-flat" data-if="iwbStyle!=${NO_IWB_EXTRAS}">
+        ${group('Belt attachment', chips(p, 'clip', IWB_CLIPS, h.clip))}
+        ${group('Concealment Claw', chips(p, 'claw', YES_NO, h.claw))}
+      </div>
     </div>
     <div class="sub" data-if="carry=OWB">
       ${group('Level', chips(p, 'owbLevel', OWB_LEVELS, h.owbLevel))}
@@ -983,8 +977,9 @@ function scopeObj(scope) {
 function applyVisibility(scope) {
   const obj = scopeObj(scope);
   scope.querySelectorAll('[data-if]').forEach((el) => {
-    const [f, val] = el.dataset.if.split('=');
-    el.hidden = String(obj[f] ?? '') !== val;
+    const not = el.dataset.if.includes('!=');
+    const [f, val] = el.dataset.if.split(not ? '!=' : '=');
+    el.hidden = (String(obj[f] ?? '') === val) === not;
   });
 }
 function setField(el, value) {
@@ -1112,7 +1107,10 @@ function holsterLines(h) {
   if (h.carry === 'IWB') {
     L.push(['Carry', 'Inside the waistband (IWB)']);
     L.push(['Style', h.iwbStyle === 'Other' ? 'Other: ' + (h.iwbOther || '(no instructions)') : h.iwbStyle || '—']);
-    L.push(['Clip', h.clip || '—']);
+    if (h.iwbStyle !== NO_IWB_EXTRAS) {
+      L.push(['Belt attachment', h.clip || '—']);
+      L.push(['Concealment claw', h.claw || '—']);
+    }
   } else if (h.carry === 'OWB') {
     L.push(['Carry', 'Outside the waistband (OWB)']);
     L.push(['Level', h.owbLevel || '—']);
@@ -1134,7 +1132,7 @@ function magLines(m) {
     ['Accent ring', m.ring || 'None'],
   ];
 }
-const fmtLines = (L) => L.map(([k, v]) => '  ' + (k + ':').padEnd(13) + v).join('\n');
+const fmtLines = (L) => L.map(([k, v]) => '  ' + (k + ':').padEnd(18) + v).join('\n');
 function orderText(o) {
   const c = o.customer;
   const out = [];
@@ -1156,7 +1154,7 @@ function batchText(s, list) {
   return head + RULE + list.map(orderText).join(RULE);
 }
 
-const CSV_COLS = ['Show', 'Show Dates', 'Order #', 'Date', 'Customer', 'Phone', 'Email', 'Address', 'Ship To', 'Item', 'Hand', 'Carry', 'IWB Style', 'Other Instructions', 'Clip', 'OWB Level', 'OWB Style', 'Belt Attachment', 'QLS Drop', 'Gun', 'Light', 'Light Model', 'Material / Finish', 'Custom Print', 'Accent Ring', 'Mag Carrier Type', 'Special Instructions'];
+const CSV_COLS = ['Show', 'Show Dates', 'Order #', 'Date', 'Customer', 'Phone', 'Email', 'Address', 'Ship To', 'Item', 'Hand', 'Carry', 'IWB Style', 'Other Instructions', 'IWB Belt Attachment', 'Concealment Claw', 'OWB Level', 'OWB Style', 'Taco Belt Attachment', 'QLS Drop', 'Gun', 'Light', 'Light Model', 'Material / Finish', 'Custom Print', 'Accent Ring', 'Mag Carrier Type', 'Special Instructions'];
 function csvRows(s, list) {
   const rows = [CSV_COLS];
   list.forEach((o) => {
@@ -1164,17 +1162,17 @@ function csvRows(s, list) {
     const base = [s.name, fmtRange(s.start, s.end), o.seq, fmtDateTime(o.createdAt), c.name, c.phone, c.email, homeAddr(c), shipTo(c)];
     const items = [];
     liveHolsters(o).forEach((h, i) => {
-      const iwb = h.carry === 'IWB', owb = h.carry === 'OWB';
+      const iwb = h.carry === 'IWB', owb = h.carry === 'OWB', iwbX = iwb && h.iwbStyle !== NO_IWB_EXTRAS;
       items.push(['Holster ' + (i + 1), h.hand, h.carry, iwb ? h.iwbStyle : '', iwb && h.iwbStyle === 'Other' ? h.iwbOther : '',
-        iwb ? h.clip : '', owb ? h.owbLevel : '', owb ? h.owbStyle : '', owb && h.owbStyle === 'Taco' ? h.attach : '',
+        iwbX ? h.clip : '', iwbX ? h.claw : '', owb ? h.owbLevel : '', owb ? h.owbStyle : '', owb && h.owbStyle === 'Taco' ? h.attach : '',
         owb && h.owbStyle === 'QLS' ? h.qlsDrop : '', h.gun, h.light, h.light === 'With light' ? h.lightModel : '',
         h.material, h.material === 'Custom Print' ? h.materialCustom : '', h.ring, '']);
     });
     liveMags(o).forEach((m, i) => {
-      items.push(['Mag carrier ' + (i + 1), '', '', '', '', '', '', '', '', '', '', '', '',
+      items.push(['Mag carrier ' + (i + 1), '', '', '', '', '', '', '', '', '', '', '', '', '',
         m.finish, m.finish === 'Custom Print' ? m.print : '', m.ring, m.type]);
     });
-    if (!items.length) items.push(Array(17).fill(''));
+    if (!items.length) items.push(Array(18).fill(''));
     items.forEach((it) => rows.push([...base, ...it, o.notes]));
   });
   return rows.map((r) => r.map((v) => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\r\n');

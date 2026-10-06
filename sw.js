@@ -1,5 +1,5 @@
 // Offline support: the app shell is cached so order taking works with no signal at the show.
-const CACHE = 'bh-orders-v3';
+const CACHE = 'bh-orders-v4';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
